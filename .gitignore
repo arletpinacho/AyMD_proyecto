@@ -1,0 +1,21 @@
+# Ambientes
+.venv/
+env/
+
+# Quarto
+_book/
+.quarto/
+*.quarto_ipynb
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Datos crudos (si son muy pesados para GitHub)
+data/raw/
+
+# macOS
+.DS_Store
+**/.DS_Store

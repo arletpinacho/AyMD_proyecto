@@ -1,0 +1,102 @@
+# Afluencia en el STC de la CDMX
+
+El *Sistema de Transporte Colectivo* del Valle de México es un organismo 
+descentralizado del gobierno, diseñado para ofrecer **transporte público masivo y 
+eléctrico por medio de trenes** a los habitantes de la capital y sus zonas 
+conurbadas [@stc_acercade]. Este sistema, mejor conocido como *el Metro de la Ciudad de México*, tan solo en el último año movió a más de 1,240 millones de 
+personas a lo largo de sus más de 218 km de extensión. Conformado por **12 líneas**, dos de tipo férreo (Líneas A y 12) y diez de tipo neumático (Líneas 1, 2, 
+3, 4, 5, 6, 7, 8, 9 y B), que suman un total de **195 estaciones** repartidas a lo 
+largo de la Zona Metropolitana del Valle de México, en enero de 2026 se posicionó 
+como el medio de transporte más utilizado en la ciudad [@oncenoticias_2026].
+
+Una encuesta realizada por el STC y Parametría en 2013 revela que las principales razones por las que los usuarios 
+eligen el metro son su **rapidez**, su **bajo costo** y su **nivel de cobertura** 
+[@stc_encuesta_2013]. Una encuesta posterior de 2018 confirma esta tendencia: **economía**, 
+**rapidez** y **cercanía** siguen siendo los motivos dominantes de elección [@stc_encuesta_2018]. Estos datos señalan que de forma estructural, para una 
+parte importante de la población, el metro no es una opción entre varias, sino la única alternativa viable de transporte. La segunda encuesta, establece que la parte de la población 
+afectada corresponde principalmente a estudiantes y trabajadores independientes, los cuales perciben un ingreso mensual menor a los $7,001$ pesos que corresponden a alrededor de 2.5 
+salarios mínimos mensuales en 2018 [@stc_encuesta_2018, @salario_2018].
+
+Es esta misma demanda masiva la que genera sus propias tensiones, pues como se refleja en 
+las encuestas citadas, entre los problemas más mencionados por los usuarios 
+se encuentran **el elevado nivel de afluencia**, los **retrasos en el servicio** y 
+la presencia de **vendedores ambulantes** [@stc_encuesta_2013]. El 63% de las 
+mujeres y el 61% de los hombres encuestados en 2018 calificaron su nivel de 
+satisfacción con el tiempo de traslado como regular o bajo [@stc_encuesta_2018]. En 
+otras palabras, el metro es **indispensable y, al mismo tiempo, insatisfactorio** para 
+la mayoría de quienes lo usan. Esta paradoja tiene una causa principal: 
+**la saturación crónica de la red**, un fenómeno que no se distribuye de manera uniforme 
+entre líneas ni entre meses, pero que el sistema hasta ahora ha gestionado sin 
+herramientas que permitan anticiparlo o caracterizarlo sistemáticamente de forma 
+histórica.
+
+Entender los patrones de saturación no es solo un problema operativo, sino una cuestión de equidad. 
+Cuando una línea opera de forma habitual por encima de su capacidad ideal, las consecuencias 
+recaen desproporcionadamente sobre quienes no pueden elegir otro medio. Identificar qué líneas concentran la mayor demanda, en qué momentos del 
+año se alcanzan niveles críticos y qué perfil de usuario caracteriza cada segmento de la red es, 
+por tanto, información con valor social directo pues permite orientar decisiones de mantenimiento, 
+ajuste de frecuencias en los trenes y asignación de personal en donde más se necesita.
+
+Con ese propósito, el proyecto plantea dos objetivos concretos y complementarios. El 
+primero es **clasificar el nivel de saturación diario de cada estación del STC como bajo, medio, alto o crítico, a partir de sus patrones históricos de afluencia**, mediante algoritmos de clasificación 
+supervisada. El segundo es **segmentar las estaciones de la red según sus perfiles de demanda**, 
+identificando grupos con comportamiento similar a través de técnicas de clustering no supervisado. 
+Ambos análisis buscan responder una pregunta central: ¿es posible anticipar y caracterizar los 
+niveles de demanda del sistema a partir de sus propios registros históricos?
+
+## Descripción del dataset
+
+Para responder esta pregunta el conjunto de datos elegido fue el de **Afluencia Diaria del Metro (Desglosada)**, disponible públicamente en el [Portal de Datos Abiertos](https://datos.cdmx.gob.mx/dataset/afluencia-diaria-del-metro-cdmx/resource/cce544e1-dc6b-42b4-bc27-0d8e6eb3ed72). Este dataset  
+registra el total de entradas a cada estación de cada línea desagregadas por esquema de pago para el 
+periodo comprendido entre enero de 2021 y abril de 2026, con un total de 1,138,411 registros. Este 
+dataset es pertinente por varias razones: su granularidad diaria por 
+estación permite construir una serie de tiempo lo suficientemente completa para nuestros modelos; 
+su origen oficial garantiza consistencia en la recolección; y su cobertura temporal abarca tanto el 
+periodo de recuperación post-pandemia como años de demanda normalizada, lo que introduce una 
+variabilidad estructural interesante.
+
+```{python}
+import pandas as pd
+
+# cargamos el conjunto de datos
+df = pd.read_csv("../../data/raw/afluenciastc_desglosado_04_2026.csv")
+
+df.info()
+```
+
+
+### Diccionario de Datos
+
+También en el [Portal de Datos Abiertos](https://datos.cdmx.gob.mx/dataset/afluencia-diaria-del-metro-cdmx/resourc|e/b1b48bbf-1c80-4988-8856-883b140d3fc7?inner_span=True) es posible obtener el siguiente diccionario.
+
+| No. | Columna | Etiqueta | Descripción | Tipo de Dato | Formato | Valores Permitidos | Campos Vacíos |
+|:---:|:---|:---|:---|:---|:---:|:---|:---|
+| **1** | `fecha` | fecha | Fecha de la medición de afluencia | Fecha | `AAAA-MM-DD` | Fechas | SIN DATOS VACÍOS |
+| **2** | `ano` | año | Año de la medición de afluencia | Número entero | - | Año | SIN DATOS VACÍOS |
+| **3** | `mes` | fecha | Mes de la medición de afluencia | Alfanumérico | - | Mes en texto (ej. "Enero") | SIN DATOS VACÍOS |
+| **4** | `linea` | línea | Línea del STC - Metro de la medición de afluencia | Alfanumérico | - | "Línea X" | SIN DATOS VACÍOS |
+| **5** | `afluencia_boleto` | entradas al metro por boleto | Total de personas que han ingresado bajo el esquema de pago con boleto | Número entero | - | Número entero | SIN DATOS VACÍOS |
+| **6** | `afluencia_prepago` | entradas al metro por prepago | Total de personas que han ingresado bajo el esquema de prepago | Número entero | - | Número entero | SIN DATOS VACÍOS |
+| **7** | `afluencia_gratuidad` | entradas al metro por gratuidad | Total de personas que han ingresado bajo el esquema de gratuidad | Número entero | - | Número entero | SIN DATOS VACÍOS |
+| **8** | `afluencia_total` | entradas totales al metro | Total de personas que a la fecha han ingresado a la red del Sistema de Transporte Colectivo Metro | Número entero | - | Número entero | SIN DATOS VACÍOS |
+
+> **Nota:** Este diccionario describe la estructura de datos para el seguimiento de la afluencia en el Sistema de Transporte Colectivo (STC) Metro de la CDMX.
+
+### Consideraciones sobre el tipo de pago
+
+La columna `tipo_pago` merece una explicación particular, ya que sus tres categorías
+no son estáticas a lo largo del periodo cubierto por los datos.
+
+El **boleto** físico fue la forma de pago tradicional del STC durante décadas, pero su uso se fue 
+descontinuando de forma gradual. La transición comenzó en septiembre de 2023 en las líneas 4 y 6, y 
+el cese total en toda la red se hizo efectivo el 20 de abril de 2024 [@boleto_2024]. Cabe mencionar 
+que la línea 12 es un caso especial ya que desde prácticamente su inauguración en 2012 operaba 
+exclusivamente con tarjeta, por lo que sus registros de boleto son históricamente bajos o nulos.
+
+El **prepago** corresponde al acceso mediante la Tarjeta de Movilidad Integrada, y es actualmente la modalidad principal de la red.
+
+La **gratuidad** cubre el acceso sin costo para adultos mayores, personas con discapacidad y niños menores de 5 años, conforme a los requisitos establecidos por el organismo. Al tratarse de una población específica, esperadamente su volumen es estructuralmente menor al de las otras dos modalidades, aunque puede variar entre líneas dependiendo de las características demográficas de las zonas que atraviesan.
+
+### Limitaciones del conjunto de datos
+
+El dataset presenta dos limitaciones relevantes para el análisis. La primera es la **ausencia de datos sobre capacidad instalada** por línea o por estación, lo que impide calcular niveles de ocupación reales respecto a un máximo definido; los niveles de saturación que se construirán en este proyecto se basarán por tanto en referencias históricas relativas, no en umbrales absolutos de capacidad. La segunda es la **falta de contexto operativo**: eventos como trabajos de remodelación, cierres temporales de estaciones o la presencia de eventos masivos en zonas aledañas afectan directamente la afluencia registrada, pero no están documentados en el dataset.

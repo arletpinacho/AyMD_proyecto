@@ -1,0 +1,26 @@
+---
+title: "Proyecto Final - Minería de Datos Aplicada a México"
+---
+
+En este documento se describe la realización paso a paso del proyecto final para la materia de Almacenes y Minería de Datos. Dicho proyecto tiene como objetivo principal, no solo aplicar los conocimientos clave adquiridos a lo largo del curso por nuestro equipo, sino además permitir el desarrollo de una solución completa de minería de datos orientada a un problema real de México.
+
+Para ello, se exploran los siguientes puntos:
+
+* Problemática a tratar
+* Introducción al conjunto de datos
+* Limpieza y preparación del conjunto de datos
+* EDA
+* Modelo supervisado
+    + Implementación
+    + Métricas
+    + Análisis de resultados
+* Modelo de Clustering
+    + Implementación
+    + Visualización e interpretación de perfiles.
+* Arquitectura y diseño
+* Reutilización del modelo
+* Conclusiones
+    + Hallazgos
+    + Limitaciones
+    + Trabajo futuro
+* Referencias

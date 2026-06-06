@@ -1,0 +1,339 @@
+# Limpieza del dataset
+```{python}
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import unicodedata
+import plotly.express as px
+
+# cargamos el conjunto de datos
+df = pd.read_csv("../../data/raw/afluenciastc_desglosado_04_2026.csv", encoding="latin-1")
+
+df.info()
+```
+## Valores registrados
+
+Para comenzar con el tratamiento de los datos, vamos a revisar los valores registrados en cada 
+columna del datset, con el fin de identificar puntos de mejora en la calidad de los datos que 
+podemos abordar.
+
+```{python}
+# por cada columna categórica (a expcepción de la fecha de medición y la estación) obtenemos los datos únicos
+columnas = ['mes', 'anio', 'linea', 'tipo_pago']
+
+fig = make_subplots(rows=2, cols=2, subplot_titles=columnas)
+
+for i, col in enumerate(columnas):
+    row = i // 2 + 1
+    col_pos = i % 2 + 1
+    
+    frecuencias = df[col].value_counts().reset_index()
+    frecuencias.columns = [col, 'frecuencia']
+    
+    fig.add_trace(
+        go.Bar(x=frecuencias[col].astype(str), y=frecuencias['frecuencia'], name=col),
+        row=row, col=col_pos
+    )
+
+fig.update_layout(height=700, showlegend=False, title_text='Frecuencias de variables categóricas')
+fig.show()
+```
+
+De este primer acercamiento, podemos notar que:
+* Los meses se registran correctamente pues los meses con mayor número de días o que se registran **completamente** en los 6 años del dataset son los más frecuentes, miestras que los meses de mayo a diciembre, que no se presentan en los registros del año 2026 son menos frecuentes
+* Existe un duplicado en las líneas debido a la presencia de acentos mal codificados
+* En efecto se tienen únicamente tres tipos de pago válidos
+
+## Limpieza de acentos 
+
+Como vimos las columnas `linea` y `estacion` tienen problemas debido a la presencia de acentos mal codificados,
+por ello, lo que se hizo primero fue eliminar el prefijo "Linea" de la respectiva columna y reparar los errores 
+de codificación en las estaciones.
+
+```{python}
+def reparar_acentos(texto):
+    try:
+        return texto.encode('raw_unicode_escape').decode('utf-8').encode('raw_unicode_escape').decode('utf-8')
+    except Exception:
+        try:
+            return texto.encode('raw_unicode_escape').decode('utf-8')
+        except Exception:
+            return texto
+
+# Eliminamos el prefijo 'Linea'
+df['linea'] = df['linea'].apply(lambda x: x.strip().split()[-1])
+
+# Recuperamos acentos 
+df['estacion'] = df['estacion'].apply(reparar_acentos)
+
+print(f'Líneas únicas: {len(df['linea'].unique())}')
+print(f'Estaciones únicas: {len(df['estacion'].unique())}')
+```
+
+Una vez hecho esto para simplificar nuestros datos se decidió eliminar los acentos y pasar a mayúsculas nuestros datos.
+
+```{python}
+# Función para quitar acentos de forma segura
+def quitar_acentos(texto):
+    if pd.isna(texto):
+        return texto
+    # Descompone los caracteres con acento y filtra dejando solo las letras base
+    texto_normalizado = unicodedata.normalize('NFD', str(texto))
+    return "".join(c for c in texto_normalizado if unicodedata.category(c) != 'Mn')
+
+# pasamos a mayúsculas y luego quitamos acentos
+df['mes'] = df['mes'].str.upper()
+df['tipo_pago'] = df['tipo_pago'].str.upper()
+df['estacion'] = df['estacion'].str.upper().apply(quitar_acentos)
+
+print(f'Estaciones únicas: {len(df['estacion'].unique())}')
+```
+
+Gracias a esta normalización, se logró tener un registro correcto de las 12 líneas y de las 163 estaciones 
+sin repetir aquellas que forman parte de más de una línea.
+
+```{python}
+fig2 = make_subplots(rows=2, cols=2, subplot_titles=columnas)
+
+for i, col in enumerate(columnas):
+    row = i // 2 + 1
+    col_pos = i % 2 + 1
+    
+    frecuencias = df[col].value_counts().reset_index()
+    frecuencias.columns = [col, 'frecuencia']
+    
+    fig2.add_trace(
+        go.Bar(x=frecuencias[col].astype(str), y=frecuencias['frecuencia'], name=col),
+        row=row, col=col_pos
+    )
+
+fig2.update_layout(height=700, showlegend=False, title_text='Frecuencias de variables categóricas')
+fig2.show()
+```
+
+## Integridad de fechas
+
+El siguiente paso es revisar que nuestras fechas se procesan de manera adecuada y que en efecto el periodo 
+reportado en el portal es correcto.
+
+```{python}
+df['fecha'] = pd.to_datetime(df['fecha'])
+print(f'Inicio: {df['fecha'].min()}')
+print(f'Fin: {df['fecha'].max()}')
+```
+
+## Datos duplicados
+
+Dado que una estación puede pertenecer a distintas líneas, consideramos un registro duplicado como aquel que tiene la misma fecha de medición, línea, estación y método de pago. Gracias a la siguiente línea es fácil ver que en este caso no se tienen datos duplicados.
+
+```{python}
+df.duplicated(subset=['fecha', 'linea', 'estacion', 'tipo_pago']).sum()
+```
+
+# Preparación del dataset
+Para que nuestros modelos sean capaces de identificar el periodo a partir del cual ya no se permite el acceso por boleto, añadimos una columna `post_boleto` para indicar si la medición se hizo antes (0) o después (1) del fin del uso de boletos.
+
+```{python}
+df['post_boleto'] = (df['fecha'] >= '2024-04-20').astype(int)
+```
+
+Originalmente nuestro conjunto tiene 3 filas muy parecidas por cada fecha pues cada una registra un método de pago distinto. Sin embargo, para reducir el número de filas y simplificar los pasos posteriores, lo que haremos es unir los distintos métodos de pago en un mismo registro **sin perder granularidad** como se muestra a continuación.
+
+```{python}
+df_simplificado = df.pivot_table(
+    index=['fecha', 'linea', 'estacion', 'mes', 'anio', 'post_boleto'],
+    columns='tipo_pago',
+    values='afluencia',
+    aggfunc='sum'
+).reset_index()
+
+# renombramos las nuevas columnas
+df_simplificado.columns.name = None
+df_simplificado = df_simplificado.rename(columns={
+    'BOLETO': 'afluencia_boleto',
+    'PREPAGO': 'afluencia_prepago',
+    'GRATUIDAD': 'afluencia_gratuidad'
+})
+
+# calculamos la afluencia total
+df_simplificado['afluencia_total'] = (
+    df_simplificado['afluencia_boleto'] + 
+    df_simplificado['afluencia_prepago'] + 
+    df_simplificado['afluencia_gratuidad']
+)
+
+print(f'Filas y columnas: {df_simplificado.shape}')
+```
+Ahora que tenemos una columna específica para la afluencia total, podemos ver
+un resumen de las afluencias registradas en el dataset.
+```{python}
+print(df_simplificado['afluencia_total'].describe())
+```
+Gracias a esto notamos que existen estaciones con afluencia 0 por lo que es importante revisar a que líneas corresponden estos registros.
+
+```{python}
+ceros = df_simplificado[df_simplificado['afluencia_total'] == 0]
+print(f"Registros con afluencia total 0: {len(ceros)}")
+print(ceros['linea'].value_counts())
+```
+Como vemos, los registros de afluencia cero están asociados mayormente a las líneas 1 y 12. Recordemos que la línea 12 estuvo cerrada debido al colapso en el tramo elevado ocurrido el 3 de mayo de 2021 y no volvió a operar en su totalidad hasta el 30 de enero de 2024 [@cierre_12], mientras que la línea 1 estuvo en remodelación del 9 de julio de 2022 al 16 de noviembre de 2025 [@remodelacion_1]. Esto explica en buena medida por qué estas líneas registran tantos días con afluencia de cero.
+
+No obstante, contemplar estos datos introduce un sesgo en el análisis, pues esa afluencia de cero no refleja una ausencia de demanda real sino una demanda que se vio obligada a redistribuirse en otros medios de transporte, como el sistema auxiliar de RTP que también resultó ineficiente. Es por esta razón que se excluyeron únicamente los registros con afluencia total igual a cero dentro de los periodos de cierre documentados de ambas líneas, respetando así los registros válidos de estaciones que sí permanecieron en operación durante esos mismos periodos.
+
+```{python}
+cierres = (
+    # Línea 12: colapso tramo elevado
+    ((df_simplificado['linea'] == '12') & 
+    (df_simplificado['fecha'] >= '2021-05-03') & 
+    (df_simplificado['fecha'] <= '2024-01-30') & 
+    (df_simplificado['afluencia_total'] == 0)) |
+    # Línea 1: remodelación
+    ((df_simplificado['linea'] == '1') & 
+    (df_simplificado['fecha'] >= '2022-07-09') & 
+    (df_simplificado['fecha'] <= '2023-11-16') & 
+    (df_simplificado['afluencia_total'] == 0))
+)
+
+df_modelo = df_simplificado[~cierres].copy()
+print(df_modelo.shape)
+```
+
+## Modelo para clasificación
+
+### Variable objetivo
+
+Para desarrollar nuestro modelo de clasificación necesitamos una variable objetivo pues será la base de nuestro algoritmo de aprendizaje supervisado.
+En este caso, dado que nos interesa **clasificar el nivel de saturación diario** 
+pero desconocemos el valor exacto de la capacidad instalada en cada estación, 
+aprovechamos los registros históricos para calcular los percentiles de afluencia de 
+cada estación a lo largo del tiempo. Este cálculo se realiza de forma individual 
+por estación y no sobre el dataset completo, con el fin de que cada estación se 
+compare contra su propio historial y no contra estaciones de mayor o menor tamaño.
+
+```{python}
+# calculo de percentiles históricos por estación
+percentiles = df_modelo.groupby(['linea', 'estacion'])['afluencia_total'].quantile([0.25, 0.60, 0.85]).unstack()
+percentiles.columns = ['p25', 'p60', 'p85']
+percentiles = percentiles.reset_index()
+
+# Se añaden los percentiles al dataframe
+df_modelo = df_modelo.merge(percentiles, on=['linea', 'estacion'], how='left')
+```
+
+Así, por cada registro, si la `afluencia_total` es menor o igual al percentil 25 de su estación, se clasifica como nivel bajo (0); si está por encima del percentil 25 pero por debajo o igual al percentil 60, como nivel medio (1); si supera el percentil 60 pero no el percentil 85, como nivel alto (2); y si está por encima del percentil 85, como nivel crítico (3). De esta forma, los casos críticos corresponden aproximadamente al 15% superior del historial de cada estación.
+
+```{python}
+# Construir variable objetivo
+def clasificar_saturacion(row):
+    if row['afluencia_total'] <= row['p25']:
+        return 0  # bajo
+    elif row['afluencia_total'] <= row['p60']:
+        return 1  # medio
+    elif row['afluencia_total'] <= row['p85']:
+        return 2  # alto
+    else:
+        return 3  # crítico
+
+df_modelo['nivel_saturacion'] = df_modelo.apply(clasificar_saturacion, axis=1)
+```
+
+```{python}
+frecuencias = df_modelo['nivel_saturacion'].value_counts().sort_index().reset_index()
+frecuencias.columns = ['nivel', 'frecuencia']
+frecuencias['nivel'] = frecuencias['nivel'].map({
+    0: 'Bajo',
+    1: 'Medio', 
+    2: 'Alto',
+    3: 'Crítico'
+})
+
+fig = px.bar(
+    frecuencias, 
+    x='nivel', 
+    y='frecuencia',
+    title='Distribución de niveles de saturación',
+    color='nivel',
+    color_discrete_map={
+        'Bajo': '#2ecc71',
+        'Medio': '#f1c40f',
+        'Alto': '#e67e22',
+        'Crítico': '#e74c3c'
+    }
+)
+fig.update_layout(showlegend=False)
+fig.show()
+```
+
+Hasta este punto nuestro dataframe se ve así:
+```{python}
+df_modelo.head(3)
+```
+
+Para que nuestro modelo pueda interpretar todas nuestras columnas necesitamos que `linea` y `mes` sean números, por lo que utilizamos la siguiente codificación.
+
+```{python}
+from sklearn.preprocessing import LabelEncoder
+
+le_linea = LabelEncoder()
+le_mes = LabelEncoder()
+
+df_modelo['linea_encoded'] = le_linea.fit_transform(df_modelo['linea'])
+df_modelo['mes_encoded'] = le_mes.fit_transform(df_modelo['mes'])
+
+print(dict(zip(le_linea.classes_, le_linea.transform(le_linea.classes_))))
+print(dict(zip(le_mes.classes_, le_mes.transform(le_mes.classes_))))
+```
+
+Así, el dataset que tenemos para el modelo de clasificación es el siguiente:
+
+```{python}
+df_modelo.head(3)
+
+columnas_clas = [
+    'linea_encoded',
+    'mes_encoded', 
+    'anio',
+    'afluencia_total',
+    'post_boleto',
+    'nivel_saturacion'
+]
+
+df_clasificacion = df_modelo[columnas_clas].copy()
+df_clasificacion.to_csv("../../data/processed/df_clasificacion.csv", index=False)
+
+df_clasificacion.head(3)
+```
+
+## Modelo para clustering
+
+En el caso del dataset para el modelo de clustering, lo que nos interesa es 
+que cada fila describa el comportamiento histórico de cada estación, pues de esta forma el modelo 
+puede segmentar las estaciones de la red según sus perfiles de demanda, en lugar de las mediciones diarias.
+
+Por ello, en este caso lo que hicimos fue calcular la proporción que representa cada tipo de 
+pago en la alfuencia total de cada estación.
+
+```{python}
+# proporcion por método de pago
+df_modelo['proporcion_prepago'] = df_modelo['afluencia_prepago'] / df_modelo['afluencia_total']
+df_modelo['proporcion_gratuidad'] = df_modelo['afluencia_gratuidad'] / df_modelo['afluencia_total']
+df_modelo['proporcion_boleto'] = df_modelo['afluencia_boleto'] / df_modelo['afluencia_total']
+```
+
+Luego agregamos los datos por estación, calculando la media y la 
+desviación estándar de la afluencia y el nivel de saturación por cada estación.
+
+```{python}
+df_clustering = df_modelo.groupby(['linea', 'estacion']).agg(
+    afluencia_media=('afluencia_total', 'mean'),
+    afluencia_std=('afluencia_total', 'std'),
+    proporcion_prepago=('proporcion_prepago', 'mean'),
+    proporcion_gratuidad=('proporcion_gratuidad', 'mean'),
+    proporcion_boleto=('proporcion_boleto', 'mean'),
+    nivel_saturacion_medio=('nivel_saturacion', 'mean')
+).reset_index()
+
+print(df_clustering.shape)
+df_clustering.to_csv("../../data/processed/df_clustering.csv", index=False)
+df_clustering.head(3)
+```
