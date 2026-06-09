@@ -196,6 +196,10 @@ cierres = (
 
 df_modelo = df_simplificado[~cierres].copy()
 print(df_modelo.shape)
+
+# Guardar dataset limpio para EDA y modelado
+df_modelo.to_csv("../../data/processed/df_modelo.csv", index=False)
+
 ```
 
 ## Modelo para clasificación

@@ -68,5 +68,255 @@
     "crumbs": [
       "Referencias"
     ]
+  },
+  {
+    "objectID": "intro.html",
+    "href": "intro.html",
+    "title": "2  Afluencia en el STC de la CDMX",
+    "section": "",
+    "text": "2.1 Descripción del dataset\nEl Sistema de Transporte Colectivo del Valle de México es un organismo descentralizado del gobierno, diseñado para ofrecer transporte público masivo y eléctrico por medio de trenes a los habitantes de la capital y sus zonas conurbadas (Sistema de Transporte Colectivo Metro, n.d.). Este sistema, mejor conocido como el Metro de la Ciudad de México, tan solo en el último año movió a más de 1,240 millones de personas a lo largo de sus más de 218 km de extensión. Conformado por 12 líneas, dos de tipo férreo (Líneas A y 12) y diez de tipo neumático (Líneas 1, 2, 3, 4, 5, 6, 7, 8, 9 y B), que suman un total de 195 estaciones repartidas a lo largo de la Zona Metropolitana del Valle de México, en enero de 2026 se posicionó como el medio de transporte más utilizado en la ciudad (Once Noticias 2026).\nUna encuesta realizada por el STC y Parametría en 2013 revela que las principales razones por las que los usuarios eligen el metro son su rapidez, su bajo costo y su nivel de cobertura (Sistema de Transporte Colectivo Metro 2013). Una encuesta posterior de 2018 confirma esta tendencia: economía, rapidez y cercanía siguen siendo los motivos dominantes de elección (Sistema de Transporte Colectivo Metro 2018). Estos datos señalan que de forma estructural, para una parte importante de la población, el metro no es una opción entre varias, sino la única alternativa viable de transporte. La segunda encuesta, establece que la parte de la población afectada corresponde principalmente a estudiantes y trabajadores independientes, los cuales perciben un ingreso mensual menor a los \\(7,001\\) pesos que corresponden a alrededor de 2.5 salarios mínimos mensuales en 2018 Comisión Nacional de los Salarios Mínimos (2017).\nEs esta misma demanda masiva la que genera sus propias tensiones, pues como se refleja en las encuestas citadas, entre los problemas más mencionados por los usuarios se encuentran el elevado nivel de afluencia, los retrasos en el servicio y la presencia de vendedores ambulantes (Sistema de Transporte Colectivo Metro 2013). El 63% de las mujeres y el 61% de los hombres encuestados en 2018 calificaron su nivel de satisfacción con el tiempo de traslado como regular o bajo (Sistema de Transporte Colectivo Metro 2018). En otras palabras, el metro es indispensable y, al mismo tiempo, insatisfactorio para la mayoría de quienes lo usan. Esta paradoja tiene una causa principal: la saturación crónica de la red, un fenómeno que no se distribuye de manera uniforme entre líneas ni entre meses, pero que el sistema hasta ahora ha gestionado sin herramientas que permitan anticiparlo o caracterizarlo sistemáticamente de forma histórica.\nEntender los patrones de saturación no es solo un problema operativo, sino una cuestión de equidad. Cuando una línea opera de forma habitual por encima de su capacidad ideal, las consecuencias recaen desproporcionadamente sobre quienes no pueden elegir otro medio. Identificar qué líneas concentran la mayor demanda, en qué momentos del año se alcanzan niveles críticos y qué perfil de usuario caracteriza cada segmento de la red es, por tanto, información con valor social directo pues permite orientar decisiones de mantenimiento, ajuste de frecuencias en los trenes y asignación de personal en donde más se necesita.\nCon ese propósito, el proyecto plantea dos objetivos concretos y complementarios. El primero es clasificar el nivel de saturación diario de cada estación del STC como bajo, medio, alto o crítico, a partir de sus patrones históricos de afluencia, mediante algoritmos de clasificación supervisada. El segundo es segmentar las estaciones de la red según sus perfiles de demanda, identificando grupos con comportamiento similar a través de técnicas de clustering no supervisado. Ambos análisis buscan responder una pregunta central: ¿es posible anticipar y caracterizar los niveles de demanda del sistema a partir de sus propios registros históricos?\nPara responder esta pregunta el conjunto de datos elegido fue el de Afluencia Diaria del Metro (Desglosada), disponible públicamente en el Portal de Datos Abiertos. Este dataset\nregistra el total de entradas a cada estación de cada línea desagregadas por esquema de pago para el periodo comprendido entre enero de 2021 y abril de 2026, con un total de 1,138,411 registros. Este dataset es pertinente por varias razones: su granularidad diaria por estación permite construir una serie de tiempo lo suficientemente completa para nuestros modelos; su origen oficial garantiza consistencia en la recolección; y su cobertura temporal abarca tanto el periodo de recuperación post-pandemia como años de demanda normalizada, lo que introduce una variabilidad estructural interesante.\nCode\nimport pandas as pd\n\n# cargamos el conjunto de datos\ndf = pd.read_csv(\"../../data/raw/afluenciastc_desglosado_04_2026.csv\")\n\ndf.info()\n\n\n&lt;class 'pandas.DataFrame'&gt;\nRangeIndex: 1138410 entries, 0 to 1138409\nData columns (total 7 columns):\n #   Column     Non-Null Count    Dtype\n---  ------     --------------    -----\n 0   fecha      1138410 non-null  str  \n 1   mes        1138410 non-null  str  \n 2   anio       1138410 non-null  int64\n 3   linea      1138410 non-null  str  \n 4   estacion   1138410 non-null  str  \n 5   tipo_pago  1138410 non-null  str  \n 6   afluencia  1138410 non-null  int64\ndtypes: int64(2), str(5)\nmemory usage: 60.8 MB",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Afluencia en el STC de la CDMX</span>"
+    ]
+  },
+  {
+    "objectID": "intro.html#descripción-del-dataset",
+    "href": "intro.html#descripción-del-dataset",
+    "title": "2  Afluencia en el STC de la CDMX",
+    "section": "",
+    "text": "2.1.1 Diccionario de Datos\nTambién en el Portal de Datos Abiertos es posible obtener el siguiente diccionario.\n\n\n\n\n\n\n\n\n\n\n\n\n\nNo.\nColumna\nEtiqueta\nDescripción\nTipo de Dato\nFormato\nValores Permitidos\nCampos Vacíos\n\n\n\n\n1\nfecha\nfecha\nFecha de la medición de afluencia\nFecha\nAAAA-MM-DD\nFechas\nSIN DATOS VACÍOS\n\n\n2\nano\naño\nAño de la medición de afluencia\nNúmero entero\n-\nAño\nSIN DATOS VACÍOS\n\n\n3\nmes\nfecha\nMes de la medición de afluencia\nAlfanumérico\n-\nMes en texto (ej. “Enero”)\nSIN DATOS VACÍOS\n\n\n4\nlinea\nlínea\nLínea del STC - Metro de la medición de afluencia\nAlfanumérico\n-\n“Línea X”\nSIN DATOS VACÍOS\n\n\n5\nafluencia_boleto\nentradas al metro por boleto\nTotal de personas que han ingresado bajo el esquema de pago con boleto\nNúmero entero\n-\nNúmero entero\nSIN DATOS VACÍOS\n\n\n6\nafluencia_prepago\nentradas al metro por prepago\nTotal de personas que han ingresado bajo el esquema de prepago\nNúmero entero\n-\nNúmero entero\nSIN DATOS VACÍOS\n\n\n7\nafluencia_gratuidad\nentradas al metro por gratuidad\nTotal de personas que han ingresado bajo el esquema de gratuidad\nNúmero entero\n-\nNúmero entero\nSIN DATOS VACÍOS\n\n\n8\nafluencia_total\nentradas totales al metro\nTotal de personas que a la fecha han ingresado a la red del Sistema de Transporte Colectivo Metro\nNúmero entero\n-\nNúmero entero\nSIN DATOS VACÍOS\n\n\n\n\nNota: Este diccionario describe la estructura de datos para el seguimiento de la afluencia en el Sistema de Transporte Colectivo (STC) Metro de la CDMX.\n\n\n\n2.1.2 Consideraciones sobre el tipo de pago\nLa columna tipo_pago merece una explicación particular, ya que sus tres categorías no son estáticas a lo largo del periodo cubierto por los datos.\nEl boleto físico fue la forma de pago tradicional del STC durante décadas, pero su uso se fue descontinuando de forma gradual. La transición comenzó en septiembre de 2023 en las líneas 4 y 6, y el cese total en toda la red se hizo efectivo el 20 de abril de 2024 (Constantino 2024). Cabe mencionar que la línea 12 es un caso especial ya que desde prácticamente su inauguración en 2012 operaba exclusivamente con tarjeta, por lo que sus registros de boleto son históricamente bajos o nulos.\nEl prepago corresponde al acceso mediante la Tarjeta de Movilidad Integrada, y es actualmente la modalidad principal de la red.\nLa gratuidad cubre el acceso sin costo para adultos mayores, personas con discapacidad y niños menores de 5 años, conforme a los requisitos establecidos por el organismo. Al tratarse de una población específica, esperadamente su volumen es estructuralmente menor al de las otras dos modalidades, aunque puede variar entre líneas dependiendo de las características demográficas de las zonas que atraviesan.\n\n\n2.1.3 Limitaciones del conjunto de datos\nEl dataset presenta dos limitaciones relevantes para el análisis. La primera es la ausencia de datos sobre capacidad instalada por línea o por estación, lo que impide calcular niveles de ocupación reales respecto a un máximo definido; los niveles de saturación que se construirán en este proyecto se basarán por tanto en referencias históricas relativas, no en umbrales absolutos de capacidad. La segunda es la falta de contexto operativo: eventos como trabajos de remodelación, cierres temporales de estaciones o la presencia de eventos masivos en zonas aledañas afectan directamente la afluencia registrada, pero no están documentados en el dataset.\n\n\n\n\nComisión Nacional de los Salarios Mínimos. 2017. Nuevo Salario Mínimo General $88.36 Pesos Diarios. Gobierno de México. https://www.gob.mx/conasami/articulos/nuevo-salario-minimo-general-88-36-pesos-diarios?idiom=es.\n\n\nConstantino, Paul. 2024. ¡Adiós Boleto Del Metro CDMX! La Historia Del Cartoncito Magnético Llegó a Su Fin. El economista. https://www.eleconomista.com.mx/estados/Adios-boleto-del-Metro-CDMX-La-historia-del-cartoncito-magnetico-llego-a-su-fin-20240420-0017.html.\n\n\nOnce Noticias. 2026. Metro de La CDMX Rebasa Los 100 Millones de Personas Usuarias En Enero. Once Noticias Digital. https://oncenoticias.digital/valle-de-mexico/metro-de-cdmx-rebasa-los-100-millones-de-personas-usuarias-en-enero/554910/.\n\n\nSistema de Transporte Colectivo Metro. 2013. ESTUDIO CUANTITATIVO SOBRE EL SERVICIO DEL STCM. Presentación de resultados. Gobierno de la Ciudad de México. https://metro.cdmx.gob.mx/storage/app/media/Metro%20Acerca%20de/preguntas%20frecuentes/encservicios1.pdf.\n\n\nSistema de Transporte Colectivo Metro. 2018. ENCUESTA SOBRE LA PERCEPCIÓN DE LA CALIDAD DEL SERVICIO CON PERSPECTIVA DE GÉNERO, DERECHOS HUMANOS Y NO DISCRIMINACIÓN. Presentación de resultados. Gobierno de la Ciudad de México. https://metro.cdmx.gob.mx/storage/app/media/inicio/encuesta_dh_nov18.pdf.\n\n\nSistema de Transporte Colectivo Metro. n.d. Acerca de. Gobierno de la Ciudad de México. https://www.metro.cdmx.gob.mx/organismo/acerca-de.",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Afluencia en el STC de la CDMX</span>"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Minería de Datos Aplicada a México: Sistema de Transporte Colectivo",
+    "section": "",
+    "text": "En este documento se describe la realización paso a paso del proyecto final para la materia de Almacenes y Minería de Datos. Dicho proyecto tiene como objetivo principal, no solo aplicar los conocimientos clave adquiridos a lo largo del curso por nuestro equipo, sino además permitir el desarrollo de una solución completa de minería de datos orientada a un problema real de México.\nPara ello, se exploran los siguientes puntos:\n\nProblemática a tratar\nIntroducción al conjunto de datos\nLimpieza y preparación del conjunto de datos\nEDA\nModelo supervisado\n\nImplementación\nMétricas\nAnálisis de resultados\n\nModelo de Clustering\n\nImplementación\nVisualización e interpretación de perfiles.\n\nArquitectura y diseño\nReutilización del modelo\nConclusiones\n\nHallazgos\nLimitaciones\nTrabajo futuro\n\nReferencias",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Proyecto Final - Minería de Datos Aplicada a México</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html",
+    "href": "eda.html",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "",
+    "text": "4.1 Carga del Dataset\nEl objetivo de esta sección es analizar el comportamiento histórico de la afluencia en las estaciones del Sistema de Transporte Colectivo Metro antes de aplicar modelos de clasificación y clustering.\nTrabajaremos sobre el dataset limpio df_modelo.csv, que contiene registros diarios por estación en el periodo comprendido entre 1 de enero de 2021 y 30 de abril de 2026.\nCode\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom matplotlib.ticker import FuncFormatter\n\n# Cargar dataset limpio\ndf = pd.read_csv(\"../../data/processed/df_modelo.csv\")\n\n# Convertir fecha a datetime\ndf[\"fecha\"] = pd.to_datetime(df[\"fecha\"])\n\n# Mostrar únicamente estructura del dataset\ndf.info()\n\n# Verificar rango temporal\nprint(\"Rango temporal del dataset:\")\nprint(\"Inicio:\", df[\"fecha\"].min())\nprint(\"Fin:\", df[\"fecha\"].max())\n\n\n&lt;class 'pandas.DataFrame'&gt;\nRangeIndex: 358086 entries, 0 to 358085\nData columns (total 10 columns):\n #   Column               Non-Null Count   Dtype         \n---  ------               --------------   -----         \n 0   fecha                358086 non-null  datetime64[us]\n 1   linea                358086 non-null  str           \n 2   estacion             358086 non-null  str           \n 3   mes                  358086 non-null  str           \n 4   anio                 358086 non-null  int64         \n 5   post_boleto          358086 non-null  int64         \n 6   afluencia_boleto     358086 non-null  int64         \n 7   afluencia_gratuidad  358086 non-null  int64         \n 8   afluencia_prepago    358086 non-null  int64         \n 9   afluencia_total      358086 non-null  int64         \ndtypes: datetime64[us](1), int64(6), str(3)\nmemory usage: 27.3 MB\nRango temporal del dataset:\nInicio: 2021-01-01 00:00:00\nFin: 2026-04-30 00:00:00",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#section",
+    "href": "eda.html#section",
+    "title": "4  EDA# Análisis Exploratorio de Datos (EDA)",
+    "section": "4.2 —",
+    "text": "4.2 —",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA# Análisis Exploratorio de Datos (EDA)</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#carga-del-dataset-1",
+    "href": "eda.html#carga-del-dataset-1",
+    "title": "4  EDA# Análisis Exploratorio de Datos (EDA)",
+    "section": "4.3 Carga del Dataset",
+    "text": "4.3 Carga del Dataset",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA# Análisis Exploratorio de Datos (EDA)</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#distribución-de-la-afluencia-total",
+    "href": "eda.html#distribución-de-la-afluencia-total",
+    "title": "4  EDA# Análisis Exploratorio de Datos (EDA)",
+    "section": "4.2 Distribución de la Afluencia Total",
+    "text": "4.2 Distribución de la Afluencia Total\nLa variable más importante para nuestro análisis es afluencia_total, ya que representa el número total de personas que ingresaron a una estación en un día determinado.\nA continuación observamos su distribución:\n\n\nCode\nplt.figure(figsize=(8,5))\nsns.histplot(df['afluencia_total'], bins=50)\nplt.title(\"Distribución de la Afluencia Total\")\nplt.xlabel(\"Afluencia total diaria\")\nplt.ylabel(\"Frecuencia\")\nplt.show()",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA# Análisis Exploratorio de Datos (EDA)</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#distribución-de-la-afluencia-total-1",
+    "href": "eda.html#distribución-de-la-afluencia-total-1",
+    "title": "4  EDA# Análisis Exploratorio de Datos (EDA)",
+    "section": "4.3 Distribución de la Afluencia Total",
+    "text": "4.3 Distribución de la Afluencia Total",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA# Análisis Exploratorio de Datos (EDA)</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#interpretación-inicial",
+    "href": "eda.html#interpretación-inicial",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.3 Interpretación Inicial",
+    "text": "4.3 Interpretación Inicial\nA partir del histograma y las estadísticas observadas previamente:\n\nLa mayoría de los registros diarios se concentran entre aproximadamente 5,000 y 25,000 pasajeros.\nExisten valores extremos que superan los 100,000 pasajeros diarios, lo que indica estaciones de altísima demanda.\nLa mediana es considerablemente menor que el valor máximo, lo que confirma la presencia de una cola larga.\n\nEsto sugiere que la red presenta una fuerte heterogeneidad: la mayoría de las estaciones operan en rangos moderados de afluencia, mientras que unas pocas concentran niveles extraordinariamente altos de demanda.\nEn la siguiente sección analizaremos cómo se distribuye esta afluencia por línea para identificar patrones estructurales dentro de la red.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#distribución-de-la-afluencia-total-20212026",
+    "href": "eda.html#distribución-de-la-afluencia-total-20212026",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.2 Distribución de la Afluencia Total (2021–2026)",
+    "text": "4.2 Distribución de la Afluencia Total (2021–2026)\nLa variable central de nuestro análisis es afluencia_total, que representa el número total de personas que ingresaron a una estación en un día determinado.\nA continuación observamos su distribución en todo el periodo 2021–2026:\n\n\nCode\nplt.figure(figsize=(10,6))\n\nsns.histplot(df[\"afluencia_total\"], bins=60, kde=True)\n\nplt.title(\"Distribución de la Afluencia Total (2021–2026)\", fontsize=14)\nplt.xlabel(\"Afluencia total diaria\")\nplt.ylabel(\"Frecuencia\")\n\n# Formato con separador de miles\nplt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: f\"{int(x):,}\"))\n\nplt.show()",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#afluencia-promedio-por-línea",
+    "href": "eda.html#afluencia-promedio-por-línea",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.5 Afluencia Promedio por Línea",
+    "text": "4.5 Afluencia Promedio por Línea\nAhora analizaremos cómo se distribuye la demanda entre las distintas líneas del sistema.\nCalcularemos:\n\nMedia de afluencia total por línea\nDesviación estándar por línea\nLas 5 líneas con mayor promedio de afluencia\n\n\n\nCode\n# Agrupar por línea\nlinea_stats = df.groupby(\"linea\")[\"afluencia_total\"].agg([\"mean\", \"std\"]).reset_index()\n\n# Renombrar columnas\nlinea_stats.columns = [\"linea\", \"afluencia_media\", \"afluencia_std\"]\n\nlinea_stats.sort_values(\"afluencia_media\", ascending=False)\n\n\n\n\n\n\n\n\n\nlinea\nafluencia_media\nafluencia_std\n\n\n\n\n2\n2\n21029.403049\n16513.730295\n\n\n3\n3\n20723.211398\n18032.286907\n\n\n10\nA\n19424.464029\n10848.876986\n\n\n9\n9\n19252.991221\n16474.654630\n\n\n8\n8\n16428.942852\n18435.285543\n\n\n0\n1\n16309.100224\n11903.115833\n\n\n11\nB\n15436.479788\n11221.492161\n\n\n7\n7\n14715.302452\n10326.582367\n\n\n1\n12\n14177.148480\n11085.801711\n\n\n5\n5\n11644.394853\n12635.442144\n\n\n6\n6\n8834.725544\n7119.350587\n\n\n4\n4\n6356.470041\n4878.477017\n\n\n\n\n\n\n\n\n4.5.1 Visualización de la Afluencia Media por Línea\n\n\nCode\nplt.figure(figsize=(10,6))\n\nsns.barplot(\n\n    data=linea_stats.sort_values(\"afluencia_media\", ascending=False),\n\n    x=\"linea\",\n\n    y=\"afluencia_media\"\n\n)\n\nplt.title(\"Afluencia Media por Línea (2021–2026)\")\n\nplt.xlabel(\"Línea\")\n\nplt.ylabel(\"Afluencia promedio diaria\")\n\nplt.show()\n\n\n\n\n\n\n\n\n\n\n\n4.5.2 Top 5 Líneas con Mayor Afluencia Promedio\n\n\nCode\ntop5 = linea_stats.sort_values(\"afluencia_media\", ascending=False).head(5)\ntop5\n\n\n\n\n\n\n\n\n\nlinea\nafluencia_media\nafluencia_std\n\n\n\n\n2\n2\n21029.403049\n16513.730295\n\n\n3\n3\n20723.211398\n18032.286907\n\n\n10\nA\n19424.464029\n10848.876986\n\n\n9\n9\n19252.991221\n16474.654630\n\n\n8\n8\n16428.942852\n18435.285543",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#interpretación",
+    "href": "eda.html#interpretación",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.5 Interpretación",
+    "text": "4.5 Interpretación\nLa Línea 2 presenta la mayor afluencia promedio diaria (≈21,029 pasajeros), seguida muy de cerca por la Línea 3 (≈20,723). Esto indica que ambas concentran la mayor demanda estructural del sistema.\nLa Línea A y la Línea 9 también muestran niveles elevados de afluencia promedio, lo que sugiere que funcionan como corredores de alta movilidad dentro de la red.\nEn contraste, las Líneas 4 y 6 presentan los promedios más bajos, con valores cercanos a 6,356 y 8,834 pasajeros diarios respectivamente, lo que indica una demanda estructural considerablemente menor.\nEn términos de variabilidad, la Línea 3 presenta una desviación estándar elevada (≈18,032), lo que sugiere fluctuaciones importantes en su demanda diaria. Esto puede estar asociado a variaciones estacionales, eventos específicos o cambios operativos.\nEste análisis confirma que la demanda no se distribuye de manera uniforme en la red, sino que existen líneas estructuralmente más saturadas que otras.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#evolución-temporal-de-la-afluencia-20212026",
+    "href": "eda.html#evolución-temporal-de-la-afluencia-20212026",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.7 Evolución Temporal de la Afluencia (2021–2026)",
+    "text": "4.7 Evolución Temporal de la Afluencia (2021–2026)\nPara analizar cómo ha cambiado la demanda del sistema a lo largo del tiempo, calculamos el promedio diario anual de afluencia. Es decir, para cada año tomamos todos los días registrados de todas las estaciones y obtenemos el promedio de pasajeros diarios.\n\n\nCode\n# Calcular afluencia promedio anual\nafluencia_anual = (\n    df.groupby(\"anio\")[\"afluencia_total\"]\n    .mean()\n    .reset_index()\n)\n\nafluencia_anual\n\n\n\n\n\n\n\n\n\nanio\nafluencia_total\n\n\n\n\n0\n2021\n11974.064204\n\n\n1\n2022\n16677.324380\n\n\n2\n2023\n17379.572266\n\n\n3\n2024\n16450.377801\n\n\n4\n2025\n17637.802487\n\n\n5\n2026\n17402.740427\n\n\n\n\n\n\n\n\n4.7.1 Visualización de la Evolución Anual\n\n\nCode\nplt.figure(figsize=(10,6))\n\nsns.lineplot(\n    data=afluencia_anual,\n    x=\"anio\",\n    y=\"afluencia_total\",\n    marker=\"o\"\n)\n\nplt.title(\"Evolución de la Afluencia Promedio Diaria por Año (2021–2026)\", fontsize=14)\nplt.xlabel(\"Año\")\nplt.ylabel(\"Afluencia promedio diaria\")\n\nplt.gca().yaxis.set_major_formatter(FuncFormatter(lambda x, _: f\"{int(x):,}\"))\n\nplt.grid(True)\nplt.show()",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#interpretación-temporal",
+    "href": "eda.html#interpretación-temporal",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.8 Interpretación Temporal",
+    "text": "4.8 Interpretación Temporal\nEl análisis temporal permite observar la dinámica estructural del sistema:\n\nEn 2021 se observan niveles aún afectados por el periodo post-pandemia.\nA partir de 2022 y 2023 se aprecia una recuperación progresiva de la demanda.\nLos años más recientes (2024–2025) muestran una estabilización en niveles elevados de afluencia.\nEl año 2026 presenta datos parciales (hasta abril), por lo que debe interpretarse con cautela.\n\nEstos resultados muestran que la demanda del sistema no se mantiene constante a lo largo del tiempo. Cambia dependiendo del contexto general de la ciudad, como la recuperación posterior a la pandemia, modificaciones operativas o cambios en el sistema de pago.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#comparación-de-afluencia-antes-y-después-del-fin-del-boleto-físico",
+    "href": "eda.html#comparación-de-afluencia-antes-y-después-del-fin-del-boleto-físico",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.9 Comparación de Afluencia: Antes y Después del Fin del Boleto Físico",
+    "text": "4.9 Comparación de Afluencia: Antes y Después del Fin del Boleto Físico\nLa variable post_boleto indica si el registro corresponde a un periodo:\n\n0 → Antes del 20 de abril de 2024 (uso de boleto físico)\n1 → Después del 20 de abril de 2024 (solo tarjeta)\n\nPara analizar si hubo un cambio significativo en la demanda, calculamos el promedio diario en ambos periodos.\n\n\nCode\nafluencia_boleto_periodo = (\n    df.groupby(\"post_boleto\")[\"afluencia_total\"]\n    .mean()\n    .reset_index()\n)\n\nafluencia_boleto_periodo[\"post_boleto\"] = afluencia_boleto_periodo[\"post_boleto\"].map({\n    0: \"Antes del fin del boleto\",\n    1: \"Después del fin del boleto\"\n})\n\nafluencia_boleto_periodo\n\n\n\n\n\n\n\n\n\npost_boleto\nafluencia_total\n\n\n\n\n0\nAntes del fin del boleto\n15322.651362\n\n\n1\nDespués del fin del boleto\n17311.190969\n\n\n\n\n\n\n\n\n4.9.1 Visualización Comparativa\n\n\nCode\nplt.figure(figsize=(8,5))\n\nsns.barplot(\n    data=afluencia_boleto_periodo,\n    x=\"post_boleto\",\n    y=\"afluencia_total\"\n)\n\nplt.title(\"Comparación de Afluencia Promedio\\nAntes y Después del Fin del Boleto\")\nplt.xlabel(\"Periodo\")\nplt.ylabel(\"Afluencia promedio diaria\")\n\nplt.gca().yaxis.set_major_formatter(FuncFormatter(lambda x, _: f\"{int(x):,}\"))\n\nplt.show()",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#interpretación-1",
+    "href": "eda.html#interpretación-1",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.6 Interpretación",
+    "text": "4.6 Interpretación\nLa Línea 2 presenta la mayor afluencia promedio diaria (≈21,029 pasajeros), seguida muy de cerca por la Línea 3 (≈20,723). Esto indica que ambas concentran la mayor demanda estructural del sistema.\nLa Línea A y la Línea 9 también muestran niveles elevados de afluencia promedio, lo que sugiere que funcionan como corredores de alta movilidad dentro de la red.\nEn contraste, las Líneas 4 y 6 presentan los promedios más bajos, con valores cercanos a 6,356 y 8,834 pasajeros diarios respectivamente, lo que indica una demanda estructural considerablemente menor.\nEn términos de variabilidad, la Línea 3 presenta una desviación estándar elevada (≈18,032), lo que sugiere fluctuaciones importantes en su demanda diaria. Esto puede estar asociado a variaciones estacionales, eventos específicos o cambios operativos.\nEste análisis confirma que la demanda no se distribuye de manera uniforme en la red, sino que existen líneas estructuralmente más saturadas que otras.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#evolución-temporal-línea-2-vs-línea-3-vs-línea-12",
+    "href": "eda.html#evolución-temporal-línea-2-vs-línea-3-vs-línea-12",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.10 Evolución Temporal: Línea 2 vs Línea 3 vs Línea 12",
+    "text": "4.10 Evolución Temporal: Línea 2 vs Línea 3 vs Línea 12\nAntes de realizar la comparación, verificamos los registros de la Línea 12 durante el periodo documentado de cierre operativo.\n\n\nCode\n# Verificación Línea 12 durante cierre\nlinea12_cierre = df[\n    (df[\"linea\"] == \"12\") &\n    (df[\"fecha\"] &gt;= \"2021-05-03\") &\n    (df[\"fecha\"] &lt;= \"2024-01-30\")\n]\n\nprint(\"Registros Línea 12 durante cierre:\", len(linea12_cierre))\nprint(\"Promedio afluencia en ese periodo:\", linea12_cierre[\"afluencia_total\"].mean())\n\n\nRegistros Línea 12 durante cierre: 4490\nPromedio afluencia en ese periodo: 11402.430512249442\n\n\nUna vez confirmado el comportamiento de los registros, procedemos a comparar la evolución anual de las líneas:\n\nLínea 2 (mayor afluencia promedio)\nLínea 3 (alta variabilidad)\nLínea 12 (impactada por cierre parcial)\n\n\n\nCode\nlineas_interes = [\"2\", \"3\", \"12\"]\n\ndf_filtrado = df[df[\"linea\"].isin(lineas_interes)]\n\nevolucion_lineas = (\n    df_filtrado.groupby([\"anio\", \"linea\"])[\"afluencia_total\"]\n    .mean()\n    .reset_index()\n)\n\n\n\n4.10.1 Visualización Comparativa\n\n\nCode\nplt.figure(figsize=(10,6))\n\nsns.lineplot(\n    data=evolucion_lineas,\n    x=\"anio\",\n    y=\"afluencia_total\",\n    hue=\"linea\",\n    marker=\"o\"\n)\n\nplt.title(\"Evolución de la Afluencia Promedio Anual\\nLíneas 2, 3 y 12 (2021–2026)\")\nplt.xlabel(\"Año\")\nplt.ylabel(\"Afluencia promedio diaria\")\n\nplt.gca().yaxis.set_major_formatter(FuncFormatter(lambda x, _: f\"{int(x):,}\"))\nplt.legend(title=\"Línea\")\nplt.grid(True)\nplt.show()",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#interpretación-comparativa",
+    "href": "eda.html#interpretación-comparativa",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.14 Interpretación Comparativa",
+    "text": "4.14 Interpretación Comparativa\nLa Línea 2 y la Línea 3 presentan niveles de demanda elevados a lo largo de todo el periodo analizado.\nEn 2021 se observan valores relativamente menores, lo cual es consistente con el contexto posterior a la pandemia. A partir de 2022 y 2023 se aprecia una recuperación progresiva en ambas líneas.\nLa Línea 2 mantiene consistentemente una afluencia promedio ligeramente superior a la Línea 3, lo que confirma su posición como la línea con mayor demanda estructural del sistema.\nAsimismo, ambas líneas muestran trayectorias similares en el tiempo, lo que sugiere que responden de forma comparable a los cambios generales en la movilidad urbana de la ciudad.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#evolución-temporal-línea-2-vs-línea-3",
+    "href": "eda.html#evolución-temporal-línea-2-vs-línea-3",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.13 Evolución Temporal: Línea 2 vs Línea 3",
+    "text": "4.13 Evolución Temporal: Línea 2 vs Línea 3\nPara comparar el comportamiento de las líneas con mayor demanda estructural, analizamos la evolución de la afluencia promedio anual de la Línea 2 y la Línea 3.\n\n\nCode\n# Filtrar únicamente Línea 2 y Línea 3\nlineas_interes = [\"2\", \"3\"]\n\ndf_filtrado = df[df[\"linea\"].isin(lineas_interes)]\n\n# Calcular promedio anual por línea\nevolucion_lineas = (\n    df_filtrado.groupby([\"anio\", \"linea\"])[\"afluencia_total\"]\n    .mean()\n    .reset_index()\n)\n\nevolucion_lineas\n\n\n\n\n\n\n\n\n\nanio\nlinea\nafluencia_total\n\n\n\n\n0\n2021\n2\n12960.211530\n\n\n1\n2021\n3\n14029.299935\n\n\n2\n2022\n2\n20222.411073\n\n\n3\n2022\n3\n21412.470450\n\n\n4\n2023\n2\n22696.337215\n\n\n5\n2023\n3\n22492.396477\n\n\n6\n2024\n2\n24161.320014\n\n\n7\n2024\n3\n22419.437289\n\n\n8\n2025\n2\n24772.190411\n\n\n9\n2025\n3\n22839.158252\n\n\n10\n2026\n2\n22020.878125\n\n\n11\n2026\n3\n21996.597222\n\n\n\n\n\n\n\n\n4.13.1 Visualización Comparativa\n\n\nCode\nplt.figure(figsize=(10,6))\n\nsns.lineplot(\n    data=evolucion_lineas,\n    x=\"anio\",\n    y=\"afluencia_total\",\n    hue=\"linea\",\n    marker=\"o\"\n)\n\nplt.title(\"Evolución de la Afluencia Promedio Anual\\nLíneas 2 y 3 (2021–2026)\")\nplt.xlabel(\"Año\")\nplt.ylabel(\"Afluencia promedio diaria\")\n\nplt.gca().yaxis.set_major_formatter(FuncFormatter(lambda x, _: f\"{int(x):,}\"))\nplt.legend(title=\"Línea\")\nplt.grid(True)\nplt.show()",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#evolución-de-la-movilidad-por-mes-20212026",
+    "href": "eda.html#evolución-de-la-movilidad-por-mes-20212026",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.11 Evolución de la Movilidad por Mes (2021–2026)",
+    "text": "4.11 Evolución de la Movilidad por Mes (2021–2026)\nPara identificar patrones estacionales en la movilidad del sistema, analizamos la afluencia promedio diaria por mes considerando todo el periodo 2021–2026.\nCalculamos el promedio diario de afluencia para cada mes agregando todos los años y todas las estaciones.\n\n\nCode\n# Promedio mensual global\nafluencia_mensual = (\n    df.groupby(\"mes\")[\"afluencia_total\"]\n    .mean()\n    .reset_index()\n)\n\n# Ordenar meses cronológicamente\norden_meses = [\n    \"ENERO\", \"FEBRERO\", \"MARZO\", \"ABRIL\", \"MAYO\", \"JUNIO\",\n    \"JULIO\", \"AGOSTO\", \"SEPTIEMBRE\", \"OCTUBRE\", \"NOVIEMBRE\", \"DICIEMBRE\"\n]\n\nafluencia_mensual[\"mes\"] = pd.Categorical(\n    afluencia_mensual[\"mes\"],\n    categories=orden_meses,\n    ordered=True\n)\n\nafluencia_mensual = afluencia_mensual.sort_values(\"mes\")\n\nafluencia_mensual\n\n\n\n\n\n\n\n\n\nmes\nafluencia_total\n\n\n\n\n3\nENERO\n13974.408311\n\n\n4\nFEBRERO\n15572.892980\n\n\n7\nMARZO\n15919.072130\n\n\n0\nABRIL\n15586.025495\n\n\n8\nMAYO\n16085.939538\n\n\n6\nJUNIO\n16057.184868\n\n\n5\nJULIO\n15661.529843\n\n\n1\nAGOSTO\n16480.696739\n\n\n11\nSEPTIEMBRE\n16924.000074\n\n\n10\nOCTUBRE\n17664.707602\n\n\n9\nNOVIEMBRE\n17797.322004\n\n\n2\nDICIEMBRE\n16573.544095\n\n\n\n\n\n\n\n\n4.11.1 Visualización Mensual\n\n\nCode\nplt.figure(figsize=(10,6))\n\nsns.lineplot(\n    data=afluencia_mensual,\n    x=\"mes\",\n    y=\"afluencia_total\",\n    marker=\"o\"\n)\n\nplt.title(\"Afluencia Promedio Diaria por Mes (2021–2026)\")\nplt.xlabel(\"Mes\")\nplt.ylabel(\"Afluencia promedio diaria\")\n\nplt.gca().yaxis.set_major_formatter(FuncFormatter(lambda x, _: f\"{int(x):,}\"))\n\nplt.xticks(rotation=45)\nplt.grid(True)\nplt.show()",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#interpretación-mensual",
+    "href": "eda.html#interpretación-mensual",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.12 Interpretación Mensual",
+    "text": "4.12 Interpretación Mensual\nEl análisis mensual permite identificar patrones de estacionalidad en la movilidad urbana.\nSe observan disminuciones en meses como julio o diciembre, esto puede estar asociado a periodos vacacionales escolares.\nMeses con mayor afluencia podrían coincidir con ciclos laborales y académicos regulares.\nEste comportamiento confirma que la movilidad en la ciudad presenta variaciones sistemáticas a lo largo del año, lo cual es relevante para anticipar periodos de mayor saturación.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#detección-de-valores-atípicos",
+    "href": "eda.html#detección-de-valores-atípicos",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.4 Detección de Valores Atípicos",
+    "text": "4.4 Detección de Valores Atípicos\nPara identificar posibles valores extremos en la variable afluencia_total, utilizamos un boxplot basado en la regla del rango intercuartílico (IQR).\n\n\nCode\nplt.figure(figsize=(10,4))\n\nsns.boxplot(x=df[\"afluencia_total\"])\n\nplt.title(\"Boxplot de la Afluencia Total (2021–2026)\")\nplt.xlabel(\"Afluencia total diaria\")\n\nplt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: f\"{int(x):,}\"))\n\nplt.show()\n\n\n\n\n\n\n\n\n\n\n4.4.1 Interpretación\nEl boxplot confirma la presencia de valores atípicos superiores.\nEstos registros no representan errores, sino estaciones con alta concentración de demanda.\nPor tanto, no se eliminan, ya que reflejan comportamiento real del sistema y son relevantes para el modelado de saturación.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#interpretación-2",
+    "href": "eda.html#interpretación-2",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.10 Interpretación",
+    "text": "4.10 Interpretación\nSe observa que la afluencia promedio diaria es mayor en el periodo posterior al fin del boleto físico.\nSin embargo, este incremento no puede atribuirse únicamente al cambio en el método de pago. El periodo “antes del fin del boleto” incluye los años 2021 y parte de 2022, que todavía reflejan efectos posteriores a la pandemia, cuando la movilidad urbana se encontraba reducida.\nPor el contrario, el periodo posterior coincide con una etapa de recuperación económica y normalización de actividades presenciales, lo que naturalmente incrementa la demanda del sistema.\nPor tanto, el aumento observado parece responder más a una recuperación estructural de la movilidad que al efecto directo de eliminar el boleto físico.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#relaciones-entre-variables",
+    "href": "eda.html#relaciones-entre-variables",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.15 Relaciones entre Variables",
+    "text": "4.15 Relaciones entre Variables\nPara explorar posibles relaciones lineales entre variables numéricas relevantes, calculamos una matriz de correlación de Pearson.\n\n\nCode\nplt.figure(figsize=(6,5))\n\ncorr = df[[\"afluencia_total\", \"anio\", \"post_boleto\"]].corr()\n\nsns.heatmap(corr, annot=True, cmap=\"coolwarm\", fmt=\".2f\")\n\nplt.title(\"Matriz de Correlación\")\nplt.show()\n\n\n\n\n\n\n\n\n\n\n4.15.1 Interpretación\nLa correlación permite identificar:\n\nRelación positiva entre año y afluencia_total, consistente con el crecimiento progresivo de la demanda.\nRelación positiva entre post_boleto y afluencia_total, reflejando el aumento en la movilidad en periodos recientes.\nAusencia de correlaciones extremadamente altas, lo que sugiere que las variables mantienen cierta independencia estructural.\n\nEste análisis refuerza la idea de que la afluencia responde a múltiples factores y no a una sola variable dominante.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
+  },
+  {
+    "objectID": "eda.html#relaciones-entre-componentes-de-afluencia",
+    "href": "eda.html#relaciones-entre-componentes-de-afluencia",
+    "title": "4  EDA — Análisis Exploratorio de Datos",
+    "section": "4.15 Relaciones entre Componentes de Afluencia",
+    "text": "4.15 Relaciones entre Componentes de Afluencia\nPara entender cómo se compone la demanda diaria, analizamos la correlación entre los distintos métodos de pago y la afluencia total.\n\n\nCode\nplt.figure(figsize=(6,5))\n\ncorr_pago = df[[\n    \"afluencia_total\",\n    \"afluencia_boleto\",\n    \"afluencia_prepago\",\n    \"afluencia_gratuidad\"\n]].corr()\n\nsns.heatmap(corr_pago, annot=True, cmap=\"Blues\", fmt=\".2f\")\n\nplt.title(\"Correlación entre Componentes de Afluencia\")\nplt.show()\n\n\n\n\n\n\n\n\n\n\n4.15.1 Interpretación\nSe observa una correlación positiva muy alta entre afluencia_total y afluencia_prepago, lo que indica que el prepago representa la mayor proporción estructural de ingresos al sistema.\nLa correlación con afluencia_boleto es menor en los años recientes, consistente con su eliminación progresiva.\nLa variable afluencia_gratuidad muestra una relación positiva moderada, reflejando que su volumen crece junto con la demanda general, pero en menor proporción.\nEste análisis confirma que la dinámica del sistema está fuertemente impulsada por el método de prepago, que constituye el componente dominante de la movilidad diaria.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>EDA — Análisis Exploratorio de Datos</span>"
+    ]
   }
 ]

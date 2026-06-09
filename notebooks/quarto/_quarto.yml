@@ -14,6 +14,7 @@ book:
     - index.qmd
     - intro.qmd
     - limpieza.qmd
+    - eda.qmd
     - references.qmd
 
 bibliography: references.bib
