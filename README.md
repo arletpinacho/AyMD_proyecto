@@ -4,8 +4,7 @@ clave adquiridos a lo largo del curso, sino además permitir el desarrollo de un
 orientada a un problema real de México.
 
 Se selccionó el datset **Afluencia Diaria del Metro (Desglosada)**, 
-disponible públicamente en [Portal de Datos Abiertos]
-(https://datos.cdmx.gob.mx/dataset/afluencia-diaria-del-metro-cdmx/resource/cce544e1-dc6b-42b4-bc27-0d8e6eb3ed72), 
+disponible públicamente en [Portal de Datos Abiertos](https://datos.cdmx.gob.mx/dataset/afluencia-diaria-del-metro-cdmx/resource/cce544e1-dc6b-42b4-bc27-0d8e6eb3ed72), 
 con el fin de desarrollar modelos de clasificación y clustering que permitan por un lado clasificar el nivel de saturación 
 diario de cada estación del STC y por el otro segmentar las estaciones de acuerdo a sus perfiles de demanda.
 
