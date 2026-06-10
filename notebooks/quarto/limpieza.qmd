@@ -273,20 +273,44 @@ Hasta este punto nuestro dataframe se ve así:
 df_modelo.head(3)
 ```
 
-Para que nuestro modelo pueda interpretar todas nuestras columnas necesitamos que `linea` y `mes` sean números, por lo que utilizamos la siguiente codificación.
+Para que nuestro modelo pueda interpretar todas nuestras columnas necesitamos que `linea`, `mes` y `estacion` sean números, por lo que utilizamos la siguiente codificación.
 
 ```{python}
 from sklearn.preprocessing import LabelEncoder
 
 le_linea = LabelEncoder()
 le_mes = LabelEncoder()
+le_estacion = LabelEncoder()
 
 df_modelo['linea_encoded'] = le_linea.fit_transform(df_modelo['linea'])
 df_modelo['mes_encoded'] = le_mes.fit_transform(df_modelo['mes'])
+df_modelo['estacion_encoded'] = le_estacion.fit_transform(df_modelo['estacion'])
 
 print(dict(zip(le_linea.classes_, le_linea.transform(le_linea.classes_))))
 print(dict(zip(le_mes.classes_, le_mes.transform(le_mes.classes_))))
+print(dict(zip(le_estacion.classes_, le_estacion.transform(le_estacion.classes_))))
 ```
+
+Por último, con el objetivo de robustecer el poder predictivo del algoritmo frente a las dinámicas del entorno de la Zona Metropolitana, extraemos y construimos variables de contexto espacio-temporal y sociocultural. Además del día de la semana, incorporamos variables binarias para mapear el impacto de los días feriados oficiales en México (usando la librería externa holidays), las fluctuaciones de movilidad causadas por los periodos de pago (efecto quincena) y la estacionalidad climática correspondiente a la temporada de lluvias histórica
+
+```{python}
+import holidays
+
+df_modelo['dia_semana'] = df_modelo['fecha'].dt.dayofweek
+
+anios_dataset = df_modelo['fecha'].dt.year.unique()
+mx_holidays = holidays.country_holidays('MX', years=anios_dataset)
+df_modelo['es_festivo'] = df_modelo['fecha'].isin(mx_holidays).astype(int)
+
+df_modelo['es_quincena'] = df_modelo['fecha'].dt.day.isin([14, 15, 30, 31]).astype(int)
+
+df_modelo['lluvia_historica'] = df_modelo['fecha'].dt.month.isin([5, 6, 7, 8, 9, 10]).astype(int)
+
+print("Estructura de las nuevas características integradas:")
+print(df_modelo[['dia_semana', 'es_festivo', 'es_quincena', 'lluvia_historica']].head(3))
+```
+
+Excluimos el conteo de 'afluencia_total' para que el modelo no dependa de esta variable, pues aunque es un buen indicador del nivel de saturación, no es una variable que se pueda conocer a priori en un día específico, lo que limita la utilidad práctica del modelo. En cambio, las variables que hemos incluido permiten al modelo aprender patrones relacionados con el contexto temporal y sociocultural que pueden influir en la afluencia sin depender directamente de la medición de afluencia total del día.
 
 Así, el dataset que tenemos para el modelo de clasificación es el siguiente:
 
@@ -295,9 +319,13 @@ df_modelo.head(3)
 
 columnas_clas = [
     'linea_encoded',
+    'estacion_encoded',
+    'dia_semana',
     'mes_encoded', 
     'anio',
-    'afluencia_total',
+    'es_festivo',
+    'es_quincena',
+    'lluvia_historica',
     'post_boleto',
     'nivel_saturacion'
 ]
@@ -305,6 +333,7 @@ columnas_clas = [
 df_clasificacion = df_modelo[columnas_clas].copy()
 df_clasificacion.to_csv("../../data/processed/df_clasificacion.csv", index=False)
 
+print(f"Dimensiones finales del dataset exportado: {df_clasificacion.shape[0]:,} registros × {df_clasificacion.shape[1]} columnas")
 df_clasificacion.head(3)
 ```
 
