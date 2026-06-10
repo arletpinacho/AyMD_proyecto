@@ -1,10 +1,18 @@
+---
+title: "Modelo de clasificación"
+
+execute:
+  cache: true
+  freeze: auto
+---
+
 # Modelo de clasificación
 
 En esta sección se construye un modelo de clasificación supervisada para predecir la variable objetivo `nivel_saturacion`, que categoriza el nivel de saturación diario de cada estación del STC Metro de la CDMX en cuatro niveles: **bajo** (0), **medio** (1), **alto** (2) y **crítico** (3). Esta variable fue definida en la etapa de preparación de datos mediante percentiles históricos de afluencia calculados de manera individual por estación, de modo que cada punto de la red se compara contra su propio historial y no contra estaciones de distinto perfil de demanda.
 
 El modelo opera en un escenario de **clasificación en tiempo real**: dado el conteo de afluencia registrado durante el día de operación, junto con el contexto de la línea, el mes, el año y la era de pago vigente, el sistema clasifica automáticamente el nivel de saturación alcanzado. Este enfoque tiene valor operativo directo para el STC Metro, ya que automatiza la etiquetación de jornadas sin depender del cálculo manual de percentiles por estación.
 
-Se empleará el algoritmo **Random Forest** con el **Patrón de Diseño Pipeline**, que encapsula las etapas de escalado y clasificación en una unidad cohesiva, serializable y reproducible. El código estará organizado mediante **Programación Orientada a Objetos (POO)** a través de la clase `MetroSaturacionModel`, que encapsula las responsabilidades de construcción, entrenamiento, evaluación y persistencia del modelo, separando la lógica del modelo de la lógica de presentación del reporte. Los hiperparámetros se optimizarán mediante `RandomizedSearchCV` con validación cruzada estratificada interna (`StratifiedKFold`) en ejecución secuencial para garantizar la estabilidad en equipos con recursos de memoria limitados.
+Se empleará el algoritmo **Random Forest** con el **Patrón de Diseño Pipeline**, que encapsula las etapas de escalado y clasificación en una unidad cohesiva, serializable y reproducible. El código estará organizado mediante **Programación Orientada a Objetos (POO)** a través de la clase `ModeloClasificacion`, que encapsula las responsabilidades de construcción, entrenamiento, evaluación y persistencia del modelo, separando la lógica del modelo de la lógica de presentación del reporte. Los hiperparámetros se optimizarán mediante `RandomizedSearchCV` con validación cruzada estratificada interna (`StratifiedKFold`) en ejecución secuencial para garantizar la estabilidad en equipos con recursos de memoria limitados.
 
 
 ## Configuración del entorno y librerías
@@ -12,22 +20,23 @@ Se empleará el algoritmo **Random Forest** con el **Patrón de Diseño Pipeline
 Se importan todas las herramientas necesarias y se fija la semilla global `SEED = 42` para garantizar la reproducibilidad completa del experimento, como lo exigen los requisitos técnicos del proyecto.
 
 ```{python}
+import sys
+import os
+
+ruta_raiz = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
+
+if ruta_raiz not in sys.path:
+    sys.path.insert(0, ruta_raiz)
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sklearn
-import os
 import warnings
-from typing import Optional
 
 from sklearn.model_selection import train_test_split
-from sklearn.dummy import DummyClassifier
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, classification_report,
-    ConfusionMatrixDisplay, roc_curve, auc, roc_auc_score
-)
+from sklearn.metrics import ConfusionMatrixDisplay, roc_curve, auc, roc_auc_score
 from sklearn.preprocessing import label_binarize
 
 # Importar la clase del modelo desde src
@@ -142,16 +151,8 @@ X = df.drop('nivel_saturacion', axis=1)
 print(f"Total de features : {X.shape[1]}")
 print(f"Variables         : {X.columns.tolist()}")
 
-linea_mapping = {
-     0: 'Línea 1',  1: 'Línea 12',  2: 'Línea 2',   3: 'Línea 3',
-     4: 'Línea 4',  5: 'Línea 5',   6: 'Línea 6',   7: 'Línea 7',
-     8: 'Línea 8',  9: 'Línea 9',  10: 'Línea A',  11: 'Línea B'
-}
-mes_mapping = {
-     0: 'Abril',      1: 'Agosto',   2: 'Diciembre',  3: 'Enero',
-     4: 'Febrero',    5: 'Julio',     6: 'Junio',      7: 'Marzo',
-     8: 'Mayo',       9: 'Noviembre', 10: 'Octubre',  11: 'Septiembre'
-}
+linea_mapping = ModeloClasificacion.LINEA_MAPPING
+mes_mapping   = ModeloClasificacion.MES_MAPPING
 ```
 
 Las nueve variables predictoras empleadas en el modelo y su justificación son las siguientes:
@@ -249,20 +250,20 @@ plt.show()
 ```
 
 
-## Diseño e implementación con POO: clase `MetroSaturacionModel`
+## Diseño e implementación con POO: Patrón Strategy y Pipeline
 
-El código fuente del modelo está organizado mediante **Programación Orientada a Objetos** en la clase `MetroSaturacionModel`. Esta clase encapsula de forma cohesiva todas las responsabilidades del ciclo de vida del modelo supervisado, separando la **lógica del modelo** (entrenamiento, predicción, evaluación, persistencia) de la **lógica de presentación** (visualizaciones y reportes del notebook).
+El código fuente del modelo está organizado mediante **Programación Orientada a Objetos (POO)**. Para esta etapa, se implementó una arquitectura basada en el **Patrón de Diseño Strategy** mediante una clase abstracta padre (`ModeloBase`), de la cual hereda nuestra clase concreta `ModeloClasificacion`. Esta arquitectura permite intercambiar algoritmos estandarizando métodos clave como `entrenar()`, `predecir()` y la persistencia (`guardar_modelo()` y `cargar_modelo()`).
 
-El principio de diseño central es el **Patrón Pipeline** de scikit-learn: se eligió este patrón porque el procesamiento de datos ocurre en **etapas secuenciales bien definidas** (normalización (`StandardScaler`) → clasificación (`RandomForestClassifier`)), lo que permite encapsular ambas transformaciones en un único objeto cohesivo, serializable y reproducible. Al serializar el Pipeline completo en disco, el escalador guarda los parámetros aprendidos en entrenamiento, garantizando que las predicciones en producción se realicen con la misma normalización sin riesgo de inconsistencias.
+A nivel de procesamiento de datos, se emplea el **Patrón Pipeline** de scikit-learn. El procesamiento ocurre en etapas secuenciales bien definidas (normalización con `StandardScaler` → clasificación con `RandomForestClassifier`), lo que permite encapsular ambas transformaciones en un único objeto cohesivo, serializable y reproducible.
 
 La clase implementa los siguientes métodos organizados por responsabilidad:
 
 - **Construcción**: `_construir_pipeline_base()` — crea un Pipeline limpio sin ajustar.
-- **Entrenamiento**: `ajustar_hiperparametros()` — búsqueda con `RandomizedSearchCV` + `StratifiedKFold`.
+- **Entrenamiento**: `entrenar()` — búsqueda con `RandomizedSearchCV` + `StratifiedKFold`.
 - **Predicción**: `predecir()` y `predecir_proba()` — inferencia sobre nuevas observaciones.
 - **Evaluación**: `evaluar()` — calcula el conjunto completo de métricas requeridas.
 - **Análisis**: `importancia_variables()` y `resultados_busqueda()` — introspección del modelo.
-- **Persistencia**: `guardar()` y `cargar()` — serialización y deserialización con joblib.
+- **Persistencia**: `guardar_modelo()` y `cargar_modelo()` — serialización y deserialización con joblib.
 
 ```{python}
 # Instanciación del modelo
@@ -276,7 +277,7 @@ for m in metodos:
         print(f"  - {m}()")
 ```
 
-La clase `MetroSaturacionModel` queda instanciada con `seed=42`. Los métodos públicos disponibles son: `ajustar_hiperparametros()`, `cargar()` (classmethod), `evaluar()`, `guardar()`, `importancia_variables()`, `predecir()`, `predecir_proba()` y `resultados_busqueda()`.
+La clase `ModeloClasificacion` queda instanciada con `seed=42`. Los métodos públicos disponibles son: `entrenar()`, `cargar_modelo()` (classmethod), `evaluar()`, `guardar_modelo()`, `importancia_variables()`, `predecir()`, `predecir_proba()` y `resultados_busqueda()`.
 
 
 ## División del conjunto de datos
@@ -318,18 +319,21 @@ La elección de la proporción 80/20 se justifica por la naturaleza del dataset:
 Se entrena un `DummyClassifier` con la estrategia `most_frequent`, que predice siempre la clase más frecuente del conjunto de entrenamiento. Este clasificador trivial establece el umbral mínimo de *Accuracy* que el modelo real está obligado a superar para justificar su complejidad computacional.
 
 ```{python}
-dummy_acc = modelo.baseline_dummy(X_test, y_test)
-clase_mas_frecuente = NOMBRES_CLASES[dummy.predict(X_test[:1])[0]]
-
+# Se calcula el accuracy de la línea base usando el método encapsulado
+dummy_acc = modelo.baseline_dummy(X_train, y_train, X_test, y_test)
+# Para saber cuál fue la clase más frecuente simplemente vemos y_train
+clase_mayoritaria_idx = y_train.mode()[0]
+clase_mas_frecuente = NOMBRES_CLASES[clase_mayoritaria_idx]
 print("Clasificador Trivial (DummyClassifier — most_frequent)")
-print(f"\n  Accuracy en prueba         : {dummy_acc:.4f}  ({dummy_acc*100:.2f}%)")
+print(f"\n  Estrategia                 : Predecir siempre la clase '{clase_mas_frecuente}'")
+print(f"  Accuracy en prueba         : {dummy_acc:.4f}  ({dummy_acc*100:.2f}%)")
 print(f"\n  → El modelo supervisado debe superar {dummy_acc*100:.2f}% de accuracy")
 ```
 
 
 ## Entrenamiento y Ajuste de Hiperparámetros
 
-Se construye el **Patrón Pipeline** a través del método `_construir_pipeline_base()` de la clase `MetroSaturacionModel`. Este patrón encadena dos etapas secuenciales bien definidas: `StandardScaler` (normalización de variables) y `RandomForestClassifier` (clasificación multiclase). Al elegir el Patrón Pipeline se garantiza que la misma transformación de normalización aprendida en entrenamiento se aplique automáticamente en cada predicción futura, eliminando el riesgo de inconsistencias entre etapas.
+Se construye el **Patrón Pipeline** a través del método `_construir_pipeline_base()` de la clase `ModeloClasificacion`. Este patrón encadena dos etapas secuenciales bien definidas: `StandardScaler` (normalización de variables) y `RandomForestClassifier` (clasificación multiclase). Al elegir el Patrón Pipeline se garantiza que la misma transformación de normalización aprendida en entrenamiento se aplique automáticamente en cada predicción futura, eliminando el riesgo de inconsistencias entre etapas.
 
 La búsqueda de hiperparámetros se realiza mediante `RandomizedSearchCV`, que evalúa un número fijo de combinaciones aleatorias del espacio de parámetros (más eficiente que `GridSearchCV` para espacios grandes). La evaluación de cada combinación se realiza con **validación cruzada estratificada interna** (`StratifiedKFold`, 3 pliegues), garantizando que la proporción de clases se mantenga en cada pliegue. La ejecución es **secuencial** (`n_jobs=None`) para evitar desbordamiento de memoria.
 
@@ -348,26 +352,16 @@ La búsqueda evalúa **10 combinaciones aleatorias** con **3 pliegues** de valid
 ```{python}
 print("Espacio de búsqueda y configuración del Pipeline")
 
-param_distributions = {
-    'clasificador__n_estimators': [150, 200, 300],
-    'clasificador__max_depth': [20, 30, 40, None],
-    'clasificador__min_samples_split': [2, 5],
-    'clasificador__min_samples_leaf': [1, 2],
-    'clasificador__max_features': ['sqrt', 'log2']
-}
-
 print("\nEspacio de búsqueda definido:")
-for param, valores in param_distributions.items():
+for param, valores in ModeloClasificacion.DEFAULT_PARAM_DISTRIBUTIONS.items():
     print(f"  {param:<47}: {valores}")
 
 print("\nIniciando búsqueda de hiperparámetros...")
 print("─" * 60)
 
-# CAMBIO CLAVE: entrenar() en lugar de ajustar_hiperparametros()
 resultado_busqueda = modelo.entrenar(
     X_train=X_train,
     y_train=y_train,
-    param_distributions=param_distributions,
     n_iter=10,
     n_splits=3
 )
@@ -456,10 +450,10 @@ Para evaluar la efectividad del modelo en el contexto del STC Metro, se seleccio
 ### Cálculo y Presentación de Métricas
 
 ```{python}
-print("Evaluación del modelo supervisado con MetroSaturacionModel.evaluar()")
+print("Evaluación del modelo supervisado con ModeloClasificacion.evaluar()")
 
-metricas = modelo.evaluar(X_test, y_test)
-acc_train = accuracy_score(y_train, modelo.predecir(X_train))
+metricas  = modelo.evaluar(X_test, y_test)
+acc_train = modelo.accuracy_entrenamiento(X_train, y_train)
 
 print("\n Comparación con la línea base ")
 print(f"  Accuracy (DummyClassifier)    : {dummy_acc:.4f}  ({dummy_acc*100:.2f}%)")
@@ -661,14 +655,14 @@ plt.show()
 
 ### Guardado del modelo
 
-El Pipeline completo (que incluye el `StandardScaler` con sus parámetros de normalización ajustados sobre `X_train` y el `RandomForestClassifier` con los hiperparámetros óptimos) se serializa en disco con `joblib` a través del método `guardar()` de la clase `MetroSaturacionModel`.
+El Pipeline completo (que incluye el `StandardScaler` con sus parámetros de normalización ajustados sobre `X_train` y el `RandomForestClassifier` con los hiperparámetros óptimos) se serializa en disco con `joblib` a través del método `guardar_modelo()` de la clase `ModeloClasificacion`.
 
 ```{python}
 ruta_modelo = "../../models/rf_clasificacion_metro.joblib"
 
 ruta_guardada = modelo.guardar_modelo(ruta_modelo)
 
-print("Persistencia del modelo con MetroSaturacionModel.guardar()")
+print("Persistencia del modelo con ModeloClasificacion.guardar_modelo()")
 print(f"\n  Archivo guardado en  : {ruta_guardada}")
 print(f"  Tamaño del archivo   : {os.path.getsize(ruta_guardada) / 1024:.1f} KB")
 
@@ -685,7 +679,7 @@ print(f"        class_weight      : {rf_guardado.class_weight}")
 
 ### Demostración de reutilización (celda independiente)
 
-La siguiente celda es **funcionalmente independiente** del entrenamiento: utiliza únicamente el método de clase `MetroSaturacionModel.cargar()` para reconstruir el modelo desde disco y realizar predicciones sin acceso a las variables de entrenamiento originales. Esto simula una sesión de inferencia en producción.
+La siguiente celda es **funcionalmente independiente** del entrenamiento: utiliza únicamente el método de clase `ModeloClasificacion.cargar_modelo()` para reconstruir el modelo desde disco y realizar predicciones sin acceso a las variables de entrenamiento originales. Esto simula una sesión de inferencia en producción.
 
 ```{python}
 # ─── DEMOSTRACIÓN DE REUTILIZACIÓN ───────────────────────────────────────────
@@ -727,10 +721,11 @@ probabilidades = modelo_cargado.predecir_proba(nuevos)
 print(f"  {'Reg':<4} {'Contexto':<55} {'Nivel Predicho':<16} {'Confianza'}")
 print("  " + "─" * 88)
 for i, (pred, proba, ctx) in enumerate(zip(predicciones, probabilidades, contexto)):
-    nivel  = MetroSaturacionModel.NOMBRES_CLASES[pred]
+    # CORRECCIÓN: Usar ModeloClasificacion en lugar de MetroSaturacionModel
+    nivel  = ModeloClasificacion.NOMBRES_CLASES[pred]
     print(f"  {i:<4} {ctx:<55} {nivel:<16} {proba.max()*100:>7.1f}%")
 
 
 ```
 
-La demostración confirma que el Pipeline cargado aplica automáticamente la normalización aprendida en entrenamiento y clasifica el nivel de saturación sin necesidad de re-entrenamiento ni acceso a los datos originales. El objeto `MetroSaturacionModel` queda disponible para inferencia en tiempo real en cualquier módulo de producción que importe el archivo `.joblib`, verificando el requisito técnico de persistencia del proyecto.
+La demostración confirma que el Pipeline cargado aplica automáticamente la normalización aprendida en entrenamiento y clasifica el nivel de saturación sin necesidad de re-entrenamiento ni acceso a los datos originales. El objeto `ModeloClasificacion` queda disponible para inferencia en tiempo real en cualquier módulo de producción que importe el archivo `.joblib`, verificando el requisito técnico de persistencia del proyecto.
