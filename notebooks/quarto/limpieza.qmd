@@ -297,7 +297,6 @@ columnas_clas = [
     'linea_encoded',
     'mes_encoded', 
     'anio',
-    'afluencia_total',
     'post_boleto',
     'nivel_saturacion'
 ]
