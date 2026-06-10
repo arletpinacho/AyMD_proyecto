@@ -15,6 +15,8 @@ book:
     - intro.qmd
     - limpieza.qmd
     - eda.qmd
+    - clustering.qmd
+    - clasificacion.qmd
     - references.qmd
 
 bibliography: references.bib
