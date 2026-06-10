@@ -6,9 +6,9 @@ book:
   title: "Minería de Datos Aplicada a México: Sistema de Transporte Colectivo"
   author: 
     - name: "Arlet Pinacho Báez (320287828)"
-    - name: "Isaac Giovani Escobar González ()"
-    - name: "Kevin Jonathan Garduño Escobar ()"
-    - name: "Seldon Sautto Ramírez ()"
+    - name: "Isaac Giovani Escobar González (321336400)"
+    - name: "Kevin Jonathan Garduño Escobar (321070629)"
+    - name: "Seldon Sautto Ramírez (321084163)"
   date: "6/1/2026"
   chapters:
     - index.qmd
