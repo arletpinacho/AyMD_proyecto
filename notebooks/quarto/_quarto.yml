@@ -17,6 +17,7 @@ book:
     - eda.qmd
     - clustering.qmd
     - clasificacion.qmd
+    - arquitectura.qmd
     - references.qmd
 
 bibliography: references.bib
