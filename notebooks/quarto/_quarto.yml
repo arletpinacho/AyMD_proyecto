@@ -18,6 +18,7 @@ book:
     - clustering.qmd
     - clasificacion.qmd
     - arquitectura.qmd
+    - conclusiones.qmd
     - references.qmd
 
 bibliography: references.bib

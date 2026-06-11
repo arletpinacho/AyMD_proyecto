@@ -1,0 +1,51 @@
+# Conclusiones
+
+## 1. Hallazgos principales
+
+Gracias a este proyecto nos podemos dar cuenta de que muchas veces es posible anticipar y caracterizar los niveles de demanda del STC Metro de la CDMX a partir exclusivamente de sus registros históricos de afluencia.  
+
+**Modelo supervisado — Clasificación de saturación**
+
+El clasificador Random Forest alcanzó una *accuracy* del **69.10 %** en el conjunto de prueba y un **AUC-ROC macro de 0.8943**, partiendo únicamente de variables contextuales: 
+identificador de línea, identificador de estación, día de la semana, mes, año y cuatro variables binarias derivadas (quincena, festivo, temporada de lluvia, era post-boleto). La mejora de **+34.40 puntos porcentuales** 
+sobre el clasificador trivial confirma que el modelo captura patrones genuinos del sistema y no se limita a reproducir la distribución de clases.
+
+El hallazgo más relevante del análisis de importancia de variables es que **la estación codificada explica el 38.7 % de la varianza de clasificación**, seguida del día de la semana (23.9 %) y la línea (12.9 %). 
+Lo que quiere decir que los patrones de saturación estan determinados por la ubicación y el contexto temporal, más que por factores externos como la temporada de lluvias o los festivos.  
+Además, el modelo de clasificación tiene la capacidad para detectar el 71% de los días de máxima saturación por lo tanto anticipar 7 de cada 10 eventos críticos.
+**Modelo no supervisado — Clustering de estaciones**
+
+El clustering K-Means con $k = 3$ mostró tres perfiles:
+
+- **Alta Demanda Estructural**: Estaciones principales con alta afluencia media y mayor volatilidad, donde predomina el pago con tarjeta.
+- **Demanda Intermedia**: Estaciones con flujo constante y forma de pago mixto.
+- **Baja Intensidad**: Estaciones periféricas con baja afluencia y predominio del pago en boleto o por gratuidad.
+
+Reveló que las estrategias de operación tarifaria y control de afluencia no deben aplicarse de manera uniforme, sino adaptarse a las características estructurales de cada estación.
+
+Este análisis no era observable a simple vista en los datos crudos.  
+Mientras que el modelo supervisado responde "¿qué nivel de saturación tendrá esta estación hoy?", el clustering responde "¿qué tipo de estación es esta estructuralmente?".
+
+La combinación de ambos modelos permite entender no solo el nivel de saturación esperado, sino también el perfil de cada estación, lo que puede ser útil para la planificación operativa y la asignación de recursos.
+
+## 2. Limitaciones del análisis
+
+A pesar de la robustez de los modelos, el análisis esta acotado por la naturaleza de los datos disponibles en el portal abierto:
+
+**Ausencia de capacidad instalada**  
+El dataset no incluye información sobre la capacidad máxima por línea o por estación. Esto limita la interpretación de los niveles de saturación, ya que no se puede cuantificar el grado de sobrecarga en términos absolutos, sino solo en relación a su propia historia.
+
+**Eventos no documentados**  
+Cierres temporales por mantenimiento, accidentes, eventos masivos en zonas aledañas o cortes de servicio no programados afectan la afluencia registrada pero no están identificados en el dataset. Los dos cierres documentados (Línea 12 y Línea 1) fueron filtrados explícitamente, 
+pero episodios menores o no documentados pueden introducir ruido en los percentiles históricos y por tanto en la variable objetivo.
+
+**Fronteras de Decisión Difusas**  
+La matriz de confusión del modelo supervisado muestra que los errores ocurren casi exclusivamente entre clases adyacentes (ej. confundir un día "Alto" con "Medio"). 
+
+## 3. Trabajo Futuro
+
+El paso más valioso para mejorar el modelo supervisado sería incorporar datos adicionales que permitan cuantificar la capacidad instalada y los eventos disruptivos. Esto podría incluir:
+- Datos de capacidad por estación y por línea, para transformar la variable objetivo en una medida de saturación relativa a la capacidad.
+- Registros de eventos disruptivos, para filtrar o etiquetar los días afectados y evitar que contaminen los patrones históricos.
+
+También se podrían incorporar datos meteorológicos más detallados, como temperatura o eventos climáticos extremos, para evaluar su impacto en la afluencia y la saturación.
