@@ -682,6 +682,14 @@ print(f"        class_weight      : {rf_guardado.class_weight}")
 La siguiente celda es **funcionalmente independiente** del entrenamiento: utiliza únicamente el método de clase `ModeloClasificacion.cargar_modelo()` para reconstruir el modelo desde disco y realizar predicciones sin acceso a las variables de entrenamiento originales. Esto simula una sesión de inferencia en producción.
 
 ```{python}
+
+import gc
+
+# Liberar la memoria del modelo de entrenamiento
+if 'modelo' in locals():
+    del modelo
+gc.collect()
+
 # ─── DEMOSTRACIÓN DE REUTILIZACIÓN ───────────────────────────────────────────
 # Esta celda simula una sesión de inferencia separada del entrenamiento.
 # Solo se necesita la ruta del archivo .joblib y la definición de la clase.
