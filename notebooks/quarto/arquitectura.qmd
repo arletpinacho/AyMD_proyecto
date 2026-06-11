@@ -8,14 +8,17 @@ Además se aplicaron patrones de diseño.
 
 ### 1.1 Visión General del Módulo `src/`
 
-La mayor parte del código del proyecto está organizado en un paquete Python (`src/`) con cuatro archivos:
+La mayor parte del código del proyecto está organizado en un paquete Python (`src/`) con siete archivos:
 
 ```
 src/
 ├── __init__.py              ← Punto de entrada público del paquete
+├── demostracion.py          ← Script de demostración para mostrar la reutilización del modelo de clasificación entrenado
+├── limpieza.py              ← Funciones de carga y limpieza del dataset crudo
 ├── modelo_base.py           ← Clase abstracta (contrato común)
 ├── modelo_clasificacion.py  ← Implementación supervisada (Random Forest)
-└── modelo_clustering.py     ← Implementación no supervisada (K-Means)
+├── modelo_clustering.py     ← Implementación no supervisada (K-Means)
+└── preparacion.py           ← Funciones de transformación y construcción de datasets derivados
 ```
 
 ### 1.2 Clases y Responsabilidades
@@ -32,6 +35,22 @@ Expone además constantes de clase (`NOMBRES_CLASES`, `LINEA_MAPPING`, `MES_MAPP
 **`ModeloClustering`**  
 Implementa el agrupamiento no supervisado. Su método `_construir_pipeline_base(n_clusters)` acepta un parámetro opcional que permite construir pipelines temporales con distintos valores de k durante `evaluar_k`, garantizando que el preprocesamiento sea consistente en la evaluación y en el entrenamiento final. 
 `Obtener_centroides` aplica la transformación inversa del scaler para devolver los centroides en las unidades originales de cada variable.
+
+### 1.3 Módulos de Preprocesamiento
+Los módulos `limpieza.py` y `preparacion.py` contienen funciones específicas para la carga, limpieza y transformación de los datos, en lugar de ser clases, lo que es apropiado dado que no mantienen estado ni necesitan herencia.
+
+**`limpieza.py`**  
+Contiene las funciones de carga y limpieza del dataset crudo. `cargar_datos` lee el CSV con la codificación correcta. 
+`limpiar_dataframe` corrige los problemas de codificación de acentos en las estaciones, normaliza el campo `linea` eliminando el prefijo "Línea " y añade la variable binaria `post_boleto`. 
+`normalizar_str` unifica mayúsculas y elimina acentos para que los joins y agrupaciones sean estables. `filtrar_cierres` elimina los registros con afluencia cero correspondientes a los cierres documentados de Líneas 1 y 12, evitando que periodos de inoperación contaminen los percentiles históricos.
+
+**`preparacion.py`**  
+Contiene las transformaciones que producen los tres datasets procesados. `pivot_tipo_pago` desnormaliza los registros por tipo de pago en columnas separadas y calcula `afluencia_total`. 
+`agregar_variable_objetivo` calcula los percentiles históricos p25, p60 y p85 por estación y los usa para construir `nivel_saturacion`, la variable target del modelo supervisado. 
+`agregar_vars_temporales` añade `dia_semana`, `es_festivo`, `es_quincena` y `lluvia_historica`. `codificar_categoricas` aplica `LabelEncoder` a las variables categóricas. `construir_df_clustering` agrega los datos por estación calculando las proporciones de pago y estadísticos de afluencia que usa el modelo no supervisado.
+
+### 1.4 Script de demostración
+El script `demostracion.py` muestra cómo cargar un modelo de clasificación previamente entrenado en un archivo `.joblib` y usarlo para hacer predicciones en nuevos datos. Esto demuestra la reutilización del modelo entrenado y la persistencia del modelo.
 
 ## 2. Patrones de diseño aplicados
 
