@@ -6,13 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Arlet Pinacho Báez (320287828)">
-<meta name="author" content="Isaac Giovani Escobar González (321336400)">
-<meta name="author" content="Kevin Jonathan Garduño Escobar (321070629)">
-<meta name="author" content="Seldon Sautto Ramírez (321084163)">
-<meta name="dcterms.date" content="2026-06-01">
 
-<title>Minería de Datos Aplicada a México: Sistema de Transporte Colectivo</title>
+<title>7&nbsp; Arquitectura y diseño – Minería de Datos Aplicada a México: Sistema de Transporte Colectivo</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -28,7 +23,61 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
@@ -38,7 +87,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./intro.html" rel="next">
+<link href="./conclusiones.html" rel="next">
+<link href="./clustering.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -76,11 +126,14 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 </head>
 
-<body class="nav-sidebar floating fullcontent quarto-light">
+<body class="nav-sidebar floating quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -89,7 +142,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Proyecto Final - Minería de Datos Aplicada a México</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./arquitectura.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Arquitectura y diseño</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -116,7 +169,7 @@ ul.task-list li input[type="checkbox"] {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Proyecto Final - Minería de Datos Aplicada a México</span></span></a>
   </div>
 </li>
@@ -152,7 +205,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./arquitectura.html" class="sidebar-item-text sidebar-link">
+  <a href="./arquitectura.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Arquitectura y diseño</span></span></a>
   </div>
 </li>
@@ -173,35 +226,41 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#arquitectura-orientada-a-objetos" id="toc-arquitectura-orientada-a-objetos" class="nav-link active" data-scroll-target="#arquitectura-orientada-a-objetos"><span class="header-section-number">7.1</span> 1. Arquitectura orientada a objetos</a>
+  <ul class="collapse">
+  <li><a href="#visión-general-del-módulo-src" id="toc-visión-general-del-módulo-src" class="nav-link" data-scroll-target="#visión-general-del-módulo-src"><span class="header-section-number">7.1.1</span> 1.1 Visión General del Módulo <code>src/</code></a></li>
+  <li><a href="#clases-y-responsabilidades" id="toc-clases-y-responsabilidades" class="nav-link" data-scroll-target="#clases-y-responsabilidades"><span class="header-section-number">7.1.2</span> 1.2 Clases y Responsabilidades</a></li>
+  <li><a href="#módulos-de-preprocesamiento" id="toc-módulos-de-preprocesamiento" class="nav-link" data-scroll-target="#módulos-de-preprocesamiento"><span class="header-section-number">7.1.3</span> 1.3 Módulos de Preprocesamiento</a></li>
+  <li><a href="#script-de-demostración" id="toc-script-de-demostración" class="nav-link" data-scroll-target="#script-de-demostración"><span class="header-section-number">7.1.4</span> 1.4 Script de demostración</a></li>
+  </ul></li>
+  <li><a href="#patrones-de-diseño-aplicados" id="toc-patrones-de-diseño-aplicados" class="nav-link" data-scroll-target="#patrones-de-diseño-aplicados"><span class="header-section-number">7.2</span> 2. Patrones de diseño aplicados</a>
+  <ul class="collapse">
+  <li><a href="#patrón-strategy" id="toc-patrón-strategy" class="nav-link" data-scroll-target="#patrón-strategy"><span class="header-section-number">7.2.1</span> 2.1 Patrón Strategy</a></li>
+  <li><a href="#patrón-pipeline" id="toc-patrón-pipeline" class="nav-link" data-scroll-target="#patrón-pipeline"><span class="header-section-number">7.2.2</span> 2.2 Patrón Pipeline</a></li>
+  </ul></li>
+  <li><a href="#diagrama-de-clases" id="toc-diagrama-de-clases" class="nav-link" data-scroll-target="#diagrama-de-clases"><span class="header-section-number">7.3</span> 3. Diagrama de clases</a></li>
+  <li><a href="#persistencia-de-modelos" id="toc-persistencia-de-modelos" class="nav-link" data-scroll-target="#persistencia-de-modelos"><span class="header-section-number">7.4</span> 4. Persistencia de modelos</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Minería de Datos Aplicada a México: Sistema de Transporte Colectivo</h1>
+<h1 class="title"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Arquitectura y diseño</span></h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Authors</div>
-    <div class="quarto-title-meta-contents">
-             <p>Arlet Pinacho Báez (320287828) </p>
-             <p>Isaac Giovani Escobar González (321336400) </p>
-             <p>Kevin Jonathan Garduño Escobar (321070629) </p>
-             <p>Seldon Sautto Ramírez (321084163) </p>
-          </div>
-  </div>
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">June 1, 2026</p>
-    </div>
-  </div>
   
     
   </div>
@@ -211,36 +270,170 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>En este documento se describe la realización paso a paso del proyecto final para la materia de Almacenes y Minería de Datos. Dicho proyecto tiene como objetivo principal, no solo aplicar los conocimientos clave adquiridos a lo largo del curso por nuestro equipo, sino además permitir el desarrollo de una solución completa de minería de datos orientada a un problema real de México.</p>
-<p>Para ello, se exploran los siguientes puntos:</p>
-<ul>
-<li>Problemática a tratar</li>
-<li>Introducción al conjunto de datos</li>
-<li>Limpieza y preparación del conjunto de datos</li>
-<li>EDA</li>
-<li>Modelo supervisado
-<ul>
-<li>Implementación</li>
-<li>Métricas</li>
-<li>Análisis de resultados</li>
-</ul></li>
-<li>Modelo de Clustering
-<ul>
-<li>Implementación</li>
-<li>Visualización e interpretación de perfiles.</li>
-</ul></li>
-<li>Arquitectura y diseño</li>
-<li>Reutilización del modelo</li>
-<li>Conclusiones
-<ul>
-<li>Hallazgos</li>
-<li>Limitaciones</li>
-<li>Trabajo futuro</li>
-</ul></li>
-<li>Referencias</li>
-</ul>
+<p>La arquitectura y el diseño de este proyecto se basa en una arquitectura orientada a objetos <strong><em>(POO)</em></strong> del modulo <code>src</code>. Este módulo contiene las clases que representan los modelos de clasificación y clustering, así como una clase base para compartir funcionalidades comunes entre ellos.<br>
+Además se aplicaron patrones de diseño.</p>
+<section id="arquitectura-orientada-a-objetos" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="arquitectura-orientada-a-objetos"><span class="header-section-number">7.1</span> 1. Arquitectura orientada a objetos</h2>
+<section id="visión-general-del-módulo-src" class="level3" data-number="7.1.1">
+<h3 data-number="7.1.1" class="anchored" data-anchor-id="visión-general-del-módulo-src"><span class="header-section-number">7.1.1</span> 1.1 Visión General del Módulo <code>src/</code></h3>
+<p>La mayor parte del código del proyecto está organizado en un paquete Python (<code>src/</code>) con siete archivos:</p>
+<pre><code>src/
+├── __init__.py              ← Punto de entrada público del paquete
+├── demostracion.py          ← Script de demostración para mostrar la reutilización del modelo de clasificación entrenado
+├── limpieza.py              ← Funciones de carga y limpieza del dataset crudo
+├── modelo_base.py           ← Clase abstracta (contrato común)
+├── modelo_clasificacion.py  ← Implementación supervisada (Random Forest)
+├── modelo_clustering.py     ← Implementación no supervisada (K-Means)
+└── preparacion.py           ← Funciones de transformación y construcción de datasets derivados</code></pre>
+</section>
+<section id="clases-y-responsabilidades" class="level3" data-number="7.1.2">
+<h3 data-number="7.1.2" class="anchored" data-anchor-id="clases-y-responsabilidades"><span class="header-section-number">7.1.2</span> 1.2 Clases y Responsabilidades</h3>
+<p><strong><code>ModeloBase</code> (abstracta)</strong><br>
+Define la interfaz común y funcionalidades compartidas para ambos tipos de modelos. Incluye métodos abstractos que deben ser implementados por las clases hijas, como <code>construir_pipeline</code> y <code>entrenar</code>. Además, proporciona la implementación concreta de <code>guardar_modelo</code> y <code>cargar_modelo</code> que ambas subclases heredan sin duplicación de código.</p>
+<p><strong><code>ModeloClasificacion</code></strong><br>
+Implementa el modelo supervisado completo: construcción del pipeline <code>StandardScaler → RandomForestClassifier</code>, búsqueda de hiperparámetros con <code>RandomizedSearchCV</code> (validación cruzada estratificada interna), evaluación multiclase con todas las métricas relevantes y análisis de importancia de variables por impureza de Gini.</p>
+<p>Expone además constantes de clase (<code>NOMBRES_CLASES</code>, <code>LINEA_MAPPING</code>, <code>MES_MAPPING</code>) que permiten a los notebooks presentar resultados con etiquetas legibles sin duplicar la información en múltiples archivos.</p>
+<p><strong><code>ModeloClustering</code></strong><br>
+Implementa el agrupamiento no supervisado. Su método <code>_construir_pipeline_base(n_clusters)</code> acepta un parámetro opcional que permite construir pipelines temporales con distintos valores de k durante <code>evaluar_k</code>, garantizando que el preprocesamiento sea consistente en la evaluación y en el entrenamiento final. <code>Obtener_centroides</code> aplica la transformación inversa del scaler para devolver los centroides en las unidades originales de cada variable.</p>
+</section>
+<section id="módulos-de-preprocesamiento" class="level3" data-number="7.1.3">
+<h3 data-number="7.1.3" class="anchored" data-anchor-id="módulos-de-preprocesamiento"><span class="header-section-number">7.1.3</span> 1.3 Módulos de Preprocesamiento</h3>
+<p>Los módulos <code>limpieza.py</code> y <code>preparacion.py</code> contienen funciones específicas para la carga, limpieza y transformación de los datos, en lugar de ser clases, lo que es apropiado dado que no mantienen estado ni necesitan herencia.</p>
+<p><strong><code>limpieza.py</code></strong><br>
+Contiene las funciones de carga y limpieza del dataset crudo. <code>cargar_datos</code> lee el CSV con la codificación correcta. <code>limpiar_dataframe</code> corrige los problemas de codificación de acentos en las estaciones, normaliza el campo <code>linea</code> eliminando el prefijo “Línea” y añade la variable binaria <code>post_boleto</code>. <code>normalizar_str</code> unifica mayúsculas y elimina acentos para que los joins y agrupaciones sean estables. <code>filtrar_cierres</code> elimina los registros con afluencia cero correspondientes a los cierres documentados de Líneas 1 y 12, evitando que periodos de inoperación contaminen los percentiles históricos.</p>
+<p><strong><code>preparacion.py</code></strong><br>
+Contiene las transformaciones que producen los tres datasets procesados. <code>pivot_tipo_pago</code> desnormaliza los registros por tipo de pago en columnas separadas y calcula <code>afluencia_total</code>. <code>agregar_variable_objetivo</code> calcula los percentiles históricos p25, p60 y p85 por estación y los usa para construir <code>nivel_saturacion</code>, la variable target del modelo supervisado. <code>agregar_vars_temporales</code> añade <code>dia_semana</code>, <code>es_festivo</code>, <code>es_quincena</code> y <code>lluvia_historica</code>. <code>codificar_categoricas</code> aplica <code>LabelEncoder</code> a las variables categóricas. <code>construir_df_clustering</code> agrega los datos por estación calculando las proporciones de pago y estadísticos de afluencia que usa el modelo no supervisado.</p>
+</section>
+<section id="script-de-demostración" class="level3" data-number="7.1.4">
+<h3 data-number="7.1.4" class="anchored" data-anchor-id="script-de-demostración"><span class="header-section-number">7.1.4</span> 1.4 Script de demostración</h3>
+<p>El script <code>demostracion.py</code> muestra cómo cargar un modelo de clasificación previamente entrenado en un archivo <code>.joblib</code> y usarlo para hacer predicciones en nuevos datos. Esto demuestra la reutilización del modelo entrenado y la persistencia del modelo.</p>
+</section>
+</section>
+<section id="patrones-de-diseño-aplicados" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="patrones-de-diseño-aplicados"><span class="header-section-number">7.2</span> 2. Patrones de diseño aplicados</h2>
+<section id="patrón-strategy" class="level3" data-number="7.2.1">
+<h3 data-number="7.2.1" class="anchored" data-anchor-id="patrón-strategy"><span class="header-section-number">7.2.1</span> 2.1 Patrón Strategy</h3>
+<p>El patrón Strategy te permite definir una familia de algoritmos, colocar cada uno de ellos en una clase separada y hacer sus objetos intercambiables <span class="citation" data-cites="strategy">(<a href="references.html#ref-strategy" role="doc-biblioref">Refactoring Guru, n.d.</a>)</span>. Este patrón sugiere que tomes esa clase que hace algo específico de muchas formas diferentes y extraigas todos esos algoritmos para colocarlos en clases separadas llamadas estrategias.</p>
+<p>El patrón Strategy se refleja en la estructura de clases, donde <code>ModeloBase</code> define la interfaz abstracta común y las subclases <code>ModeloClasificacion</code> y <code>ModeloClustering</code> son las estrategias concretas que implementan estrategias específicas para clasificación y clustering respectivamente. Esto permite cambiar fácilmente entre diferentes tipos de modelos sin modificar el código que los utiliza, promoviendo la flexibilidad y la extensibilidad del proyecto.</p>
+<p>Elegimos este patrón porque tiene una ventaja muy grande la cual es que cualquier código cliente puede operar sobre un <code>ModeloBase</code> sin necesidad de saber qué algoritmo hay debajo. Cambiar de Random Forest a Gradient Boosting, o de K-Means a DBSCAN, no requeriría modificar nada fuera de <code>src/</code>.</p>
+</section>
+<section id="patrón-pipeline" class="level3" data-number="7.2.2">
+<h3 data-number="7.2.2" class="anchored" data-anchor-id="patrón-pipeline"><span class="header-section-number">7.2.2</span> 2.2 Patrón Pipeline</h3>
+<p>El patrón Pipeline usa una serie de etapas ordenadas para procesar los datos de entrada. Cada etapa es responsable de una parte específica del procesamiento, y el resultado de una etapa se pasa a la siguiente, lo que representa una etapa de una tubería <span class="citation" data-cites="pipeline">(<a href="references.html#ref-pipeline" role="doc-biblioref">Iluwatar, n.d.</a>)</span>.</p>
+<p>Dentro de cada clase concreta, el procesamiento de datos se encapsula utilizando el patrón Pipeline de <code>scikit-learn</code>. Lo que nos garantiza que:<br>
+- El <code>StandardScaler</code> se aplica de manera consistente tanto en la evaluación de hiperparámetros como en el entrenamiento final. - El objeto serializado con <code>joblib</code> contiene tanto el escalador ajustado como el modelo entrenado, haciendo la persistencia y la reutilización del modelo más sencilla y robusta. - La serialización con <code>guardar_modelo</code> y la recarga con <code>cargar_modelo</code> funcionan sin problemas, ya que el pipeline completo se guarda como un solo objeto.</p>
+</section>
+</section>
+<section id="diagrama-de-clases" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="diagrama-de-clases"><span class="header-section-number">7.3</span> 3. Diagrama de clases</h2>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {
+  'theme': 'default',
+  'themeVariables': {
+    'darkMode': false,
+    'background': '#ffffff'
+  }
+}}%%
+classDiagram
+    class ModeloBase {
+        &lt;&lt;Abstracta&gt;&gt;
+        +int seed
+        +Pipeline pipeline_
+        +list feature_names_
+        +entrenar(X, y, **kwargs)* dict
+        +predecir(X)* ndarray
+        +guardar_modelo(ruta str) str
+        +cargar_modelo(ruta str, seed int)$ ModeloBase
+        +obtener_info_modelo() dict
+        +__str__() str
+    }
+
+    class ModeloClasificacion {
+        +list NOMBRES_CLASES
+        +list COLORES_CLASES
+        +dict LINEA_MAPPING
+        +dict MES_MAPPING
+        +dict DEFAULT_PARAM_DISTRIBUTIONS
+        +RandomizedSearchCV busqueda_
+        -_construir_pipeline_base() Pipeline
+        +entrenar(X_train, y_train, param_distributions, n_iter, n_splits) dict
+        +predecir(X) ndarray
+        +predecir_proba(X) ndarray
+        +evaluar(X_test, y_test) dict
+        +accuracy_entrenamiento(X_train, y_train) float
+        +importancia_variables() DataFrame
+        +resultados_busqueda() DataFrame
+        +baseline_dummy(X_train, y_train, X_test, y_test) float
+    }
+
+    class ModeloClustering {
+        +int n_clusters
+        +dict NOMBRES_CLUSTERS
+        +dict metricas_validacion_
+        -_construir_pipeline_base(n_clusters) Pipeline
+        +entrenar(X, y) dict
+        +predecir(X) ndarray
+        +evaluar_k(X, k_max) Tuple
+        +Obtener_centroides() DataFrame
+    }
+
+    ModeloBase &lt;|-- ModeloClasificacion : Hereda
+    ModeloBase &lt;|-- ModeloClustering : Hereda
+
+    style ModeloBase fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style ModeloClasificacion fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style ModeloClustering fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</section>
+<section id="persistencia-de-modelos" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="persistencia-de-modelos"><span class="header-section-number">7.4</span> 4. Persistencia de modelos</h2>
+<p>Ambos modelos heredan los métodos <code>guardar_modelo</code> y <code>cargar_modelo</code> de <code>ModeloBase</code>, lo que garantiza una forma consistente de persistir y reutilizar los modelos entrenados. La serialización se realiza utilizando <code>joblib</code>.</p>
+<div id="ef455294" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys, os</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, os.path.abspath(<span class="st">"../.."</span>))</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src <span class="im">import</span> ModeloClasificacion, ModeloClustering</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Verificar existencia de los modelos guardados</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>RUTA_CLASIFICACION <span class="op">=</span> <span class="st">"../../models/rf_clasificacion_metro.joblib"</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>RUTA_CLUSTERING    <span class="op">=</span> <span class="st">"../../models/modelo_clustering.pkl"</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ruta, nombre <span class="kw">in</span> [(RUTA_CLASIFICACION, <span class="st">"Clasificación"</span>), (RUTA_CLUSTERING, <span class="st">"Clustering"</span>)]:</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    existe <span class="op">=</span> os.path.exists(ruta)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> existe:</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        kb <span class="op">=</span> os.path.getsize(ruta) <span class="op">/</span> <span class="dv">1024</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  [</span><span class="sc">{</span>nombre<span class="sc">}</span><span class="ss">] Encontrado  — </span><span class="sc">{</span>ruta<span class="sc">}</span><span class="ss">  (</span><span class="sc">{</span>kb<span class="sc">:.1f}</span><span class="ss"> KB)"</span>)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  [</span><span class="sc">{</span>nombre<span class="sc">}</span><span class="ss">] No encontrado — ejecuta primero clasificacion.qmd y clustering.qmd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  [Clasificación] Encontrado  — ../../models/rf_clasificacion_metro.joblib  (1714763.3 KB)
+  [Clustering] No encontrado — ejecuta primero clasificacion.qmd y clustering.qmd</code></pre>
+</div>
+</div>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-pipeline" class="csl-entry" role="listitem">
+Iluwatar. n.d. <em>Patrón de Diseño <span>Pipeline</span></em>. Java Design Patterns. <a href="https://java-design-patterns.com/es/patterns/pipeline/#proposito">https://java-design-patterns.com/es/patterns/pipeline/#proposito</a>.
+</div>
+<div id="ref-strategy" class="csl-entry" role="listitem">
+Refactoring Guru. n.d. <em>Patrón de Diseño <span>Strategy</span></em>. Refactoring Guru. <a href="https://refactoring.guru/es/design-patterns/strategy">https://refactoring.guru/es/design-patterns/strategy</a>.
+</div>
+</div>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -645,10 +838,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
+      <a href="./clustering.html" class="pagination-link" aria-label="Clustering — Agrupamiento de Estaciones">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Clustering — Agrupamiento de Estaciones</span></span>
+      </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./intro.html" class="pagination-link" aria-label="Afluencia en el STC de la CDMX">
-        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Afluencia en el STC de la CDMX</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./conclusiones.html" class="pagination-link" aria-label="Conclusiones">
+        <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Conclusiones</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

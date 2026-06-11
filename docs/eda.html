@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.9.31">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -68,7 +68,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./references.html" rel="next">
+<link href="./clasificacion.html" rel="next">
 <link href="./limpieza.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -76,10 +76,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7c69b197886ae2a34062761d21e44731.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-5ccb035bea26c1e21f80f44cf7c27909.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-44ee0976171e9be92e6ebe9be850cd66.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -174,6 +174,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./clasificacion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Modelo de clasificación</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Clustering — Agrupamiento de Estaciones</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./arquitectura.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Arquitectura y diseño</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./conclusiones.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Conclusiones</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Referencias</span></a>
   </div>
@@ -255,7 +279,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Trabajaremos sobre el dataset limpio <code>df_modelo.csv</code>, que contiene registros diarios por estación en el periodo comprendido entre <strong>1 de enero de 2021 y 30 de abril de 2026</strong>.</p>
 <section id="carga-del-dataset" class="level2" data-number="4.1">
 <h2 data-number="4.1" class="anchored" data-anchor-id="carga-del-dataset"><span class="header-section-number">4.1</span> Carga del Dataset</h2>
-<div id="cf6a1aef" class="cell" data-execution_count="1">
+<div id="a2963acc" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
@@ -305,7 +329,7 @@ Fin: 2026-04-30 00:00:00</code></pre>
 <h2 data-number="4.2" class="anchored" data-anchor-id="distribución-de-la-afluencia-total-20212026"><span class="header-section-number">4.2</span> Distribución de la Afluencia Total (2021–2026)</h2>
 <p>La variable central de nuestro análisis es <code>afluencia_total</code>, que representa el número total de personas que ingresaron a una estación en un día determinado.</p>
 <p>A continuación observamos su distribución en todo el periodo 2021–2026:</p>
-<div id="77ab1de5" class="cell" data-execution_count="2">
+<div id="88ec3cc8" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">6</span>))</span>
@@ -344,7 +368,7 @@ Fin: 2026-04-30 00:00:00</code></pre>
 <section id="detección-de-valores-atípicos" class="level2" data-number="4.4">
 <h2 data-number="4.4" class="anchored" data-anchor-id="detección-de-valores-atípicos"><span class="header-section-number">4.4</span> Detección de Valores Atípicos</h2>
 <p>Para identificar posibles valores extremos en la variable <code>afluencia_total</code>, utilizamos un boxplot basado en la regla del rango intercuartílico (IQR).</p>
-<div id="65098ad0" class="cell" data-execution_count="3">
+<div id="a3f69603" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">4</span>))</span>
@@ -382,7 +406,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <li>Desviación estándar por línea</li>
 <li>Las 5 líneas con mayor promedio de afluencia</li>
 </ul>
-<div id="30a50531" class="cell" data-execution_count="4">
+<div id="a7bf7b1f" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Agrupar por línea</span></span>
@@ -393,7 +417,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>linea_stats.sort_values(<span class="st">"afluencia_media"</span>, ascending<span class="op">=</span><span class="va">False</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="53">
+<div class="cell-output cell-output-display" data-execution_count="4">
 <div>
 
 
@@ -487,7 +511,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 </div>
 <section id="visualización-de-la-afluencia-media-por-línea" class="level3" data-number="4.5.1">
 <h3 data-number="4.5.1" class="anchored" data-anchor-id="visualización-de-la-afluencia-media-por-línea"><span class="header-section-number">4.5.1</span> Visualización de la Afluencia Media por Línea</h3>
-<div id="46da02fe" class="cell" data-execution_count="5">
+<div id="17e05dda" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">6</span>))</span>
@@ -521,13 +545,13 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 </section>
 <section id="top-5-líneas-con-mayor-afluencia-promedio" class="level3" data-number="4.5.2">
 <h3 data-number="4.5.2" class="anchored" data-anchor-id="top-5-líneas-con-mayor-afluencia-promedio"><span class="header-section-number">4.5.2</span> Top 5 Líneas con Mayor Afluencia Promedio</h3>
-<div id="78f592c3" class="cell" data-execution_count="6">
+<div id="54fa1952" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>top5 <span class="op">=</span> linea_stats.sort_values(<span class="st">"afluencia_media"</span>, ascending<span class="op">=</span><span class="va">False</span>).head(<span class="dv">5</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>top5</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="55">
+<div class="cell-output cell-output-display" data-execution_count="6">
 <div>
 
 
@@ -590,7 +614,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <section id="evolución-temporal-de-la-afluencia-20212026" class="level2" data-number="4.7">
 <h2 data-number="4.7" class="anchored" data-anchor-id="evolución-temporal-de-la-afluencia-20212026"><span class="header-section-number">4.7</span> Evolución Temporal de la Afluencia (2021–2026)</h2>
 <p>Para analizar cómo ha cambiado la demanda del sistema a lo largo del tiempo, calculamos el promedio diario anual de afluencia. Es decir, para cada año tomamos todos los días registrados de todas las estaciones y obtenemos el promedio de pasajeros diarios.</p>
-<div id="9f1a16c7" class="cell" data-execution_count="7">
+<div id="8dd72224" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calcular afluencia promedio anual</span></span>
@@ -602,7 +626,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>afluencia_anual</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="56">
+<div class="cell-output cell-output-display" data-execution_count="7">
 <div>
 
 
@@ -653,7 +677,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 </div>
 <section id="visualización-de-la-evolución-anual" class="level3" data-number="4.7.1">
 <h3 data-number="4.7.1" class="anchored" data-anchor-id="visualización-de-la-evolución-anual"><span class="header-section-number">4.7.1</span> Visualización de la Evolución Anual</h3>
-<div id="af017ad7" class="cell" data-execution_count="8">
+<div id="4721d6eb" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">6</span>))</span>
@@ -703,7 +727,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <li>1 → Después del 20 de abril de 2024 (solo tarjeta)</li>
 </ul>
 <p>Para analizar si hubo un cambio significativo en la demanda, calculamos el promedio diario en ambos periodos.</p>
-<div id="9ebe13a1" class="cell" data-execution_count="9">
+<div id="3935cb9d" class="cell" data-execution_count="9">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>afluencia_boleto_periodo <span class="op">=</span> (</span>
@@ -719,7 +743,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>afluencia_boleto_periodo</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="58">
+<div class="cell-output cell-output-display" data-execution_count="9">
 <div>
 
 
@@ -750,7 +774,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 </div>
 <section id="visualización-comparativa" class="level3" data-number="4.9.1">
 <h3 data-number="4.9.1" class="anchored" data-anchor-id="visualización-comparativa"><span class="header-section-number">4.9.1</span> Visualización Comparativa</h3>
-<div id="0ae1afe1" class="cell" data-execution_count="10">
+<div id="537fe7e0" class="cell" data-execution_count="10">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>,<span class="dv">5</span>))</span>
@@ -790,7 +814,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <h2 data-number="4.11" class="anchored" data-anchor-id="evolución-de-la-movilidad-por-mes-20212026"><span class="header-section-number">4.11</span> Evolución de la Movilidad por Mes (2021–2026)</h2>
 <p>Para identificar patrones estacionales en la movilidad del sistema, analizamos la afluencia promedio diaria por mes considerando todo el periodo 2021–2026.</p>
 <p>Calculamos el promedio diario de afluencia para cada mes agregando todos los años y todas las estaciones.</p>
-<div id="a3f8557b" class="cell" data-execution_count="11">
+<div id="0e10b948" class="cell" data-execution_count="11">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Promedio mensual global</span></span>
@@ -816,7 +840,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>afluencia_mensual</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="60">
+<div class="cell-output cell-output-display" data-execution_count="11">
 <div>
 
 
@@ -897,7 +921,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 </div>
 <section id="visualización-mensual" class="level3" data-number="4.11.1">
 <h3 data-number="4.11.1" class="anchored" data-anchor-id="visualización-mensual"><span class="header-section-number">4.11.1</span> Visualización Mensual</h3>
-<div id="f9fb41c4" class="cell" data-execution_count="12">
+<div id="7c65e42b" class="cell" data-execution_count="12">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">6</span>))</span>
@@ -939,7 +963,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <section id="evolución-temporal-línea-2-vs-línea-3" class="level2" data-number="4.13">
 <h2 data-number="4.13" class="anchored" data-anchor-id="evolución-temporal-línea-2-vs-línea-3"><span class="header-section-number">4.13</span> Evolución Temporal: Línea 2 vs Línea 3</h2>
 <p>Para comparar el comportamiento de las líneas con mayor demanda estructural, analizamos la evolución de la afluencia promedio anual de la Línea 2 y la Línea 3.</p>
-<div id="2e35a175" class="cell" data-execution_count="13">
+<div id="8c730662" class="cell" data-execution_count="13">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filtrar únicamente Línea 2 y Línea 3</span></span>
@@ -956,7 +980,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>evolucion_lineas</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="62">
+<div class="cell-output cell-output-display" data-execution_count="13">
 <div>
 
 
@@ -1050,7 +1074,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 </div>
 <section id="visualización-comparativa-1" class="level3" data-number="4.13.1">
 <h3 data-number="4.13.1" class="anchored" data-anchor-id="visualización-comparativa-1"><span class="header-section-number">4.13.1</span> Visualización Comparativa</h3>
-<div id="f30edec2" class="cell" data-execution_count="14">
+<div id="256a47d8" class="cell" data-execution_count="14">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">6</span>))</span>
@@ -1092,7 +1116,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <section id="relaciones-entre-componentes-de-afluencia" class="level2" data-number="4.15">
 <h2 data-number="4.15" class="anchored" data-anchor-id="relaciones-entre-componentes-de-afluencia"><span class="header-section-number">4.15</span> Relaciones entre Componentes de Afluencia</h2>
 <p>Para entender cómo se compone la demanda diaria, analizamos la correlación entre los distintos métodos de pago y la afluencia total.</p>
-<div id="a07e4338" class="cell" data-execution_count="15">
+<div id="ad42c6c2" class="cell" data-execution_count="15">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">6</span>,<span class="dv">5</span>))</span>
@@ -1129,7 +1153,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <h1 data-number="5"><span class="header-section-number">5</span> Conclusión General del Análisis Exploratorio</h1>
 <p>El análisis exploratorio del periodo comprendido entre el <strong>1 de enero de 2021 y el 30 de abril de 2026</strong> permite caracterizar cuantitativamente la magnitud y estructura de la demanda del Sistema de Transporte Colectivo Metro.</p>
 <p>Durante este periodo se registraron aproximadamente:</p>
-<div id="49f0dfab" class="cell" data-execution_count="16">
+<div id="06b90fc0" class="cell" data-execution_count="16">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Afluencia total acumulada en el periodo: </span><span class="sc">{</span>df[<span class="st">'afluencia_total'</span>]<span class="sc">.</span><span class="bu">sum</span>()<span class="sc">:,}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1143,7 +1167,7 @@ Estos registros no representan errores, sino estaciones con alta concentración 
 <ul>
 <li>La <strong>afluencia media diaria por estación</strong> es de aproximadamente:</li>
 </ul>
-<div id="4913fc85" class="cell" data-execution_count="17">
+<div id="c2cc6198" class="cell" data-execution_count="17">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Afluencia promedio diaria por estación: </span><span class="sc">{</span>df[<span class="st">'afluencia_total'</span>]<span class="sc">.</span>mean()<span class="sc">:,.0f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1589,8 +1613,8 @@ Estos registros no representan errores, sino estaciones con alta concentración 
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./references.html" class="pagination-link" aria-label="Referencias">
-        <span class="nav-page-text">Referencias</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./clasificacion.html" class="pagination-link" aria-label="Modelo de clasificación">
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Modelo de clasificación</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

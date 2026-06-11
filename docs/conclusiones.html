@@ -6,13 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Arlet Pinacho Báez (320287828)">
-<meta name="author" content="Isaac Giovani Escobar González (321336400)">
-<meta name="author" content="Kevin Jonathan Garduño Escobar (321070629)">
-<meta name="author" content="Seldon Sautto Ramírez (321084163)">
-<meta name="dcterms.date" content="2026-06-01">
 
-<title>Minería de Datos Aplicada a México: Sistema de Transporte Colectivo</title>
+<title>8&nbsp; Conclusiones – Minería de Datos Aplicada a México: Sistema de Transporte Colectivo</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -38,7 +33,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./intro.html" rel="next">
+<link href="./references.html" rel="next">
+<link href="./arquitectura.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -77,10 +73,39 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
-<body class="nav-sidebar floating fullcontent quarto-light">
+<body class="nav-sidebar floating quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -89,7 +114,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Proyecto Final - Minería de Datos Aplicada a México</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./conclusiones.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Conclusiones</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -116,7 +141,7 @@ ul.task-list li input[type="checkbox"] {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Proyecto Final - Minería de Datos Aplicada a México</span></span></a>
   </div>
 </li>
@@ -158,7 +183,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./conclusiones.html" class="sidebar-item-text sidebar-link">
+  <a href="./conclusiones.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Conclusiones</span></span></a>
   </div>
 </li>
@@ -173,35 +198,30 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#hallazgos-principales" id="toc-hallazgos-principales" class="nav-link active" data-scroll-target="#hallazgos-principales"><span class="header-section-number">8.1</span> 1. Hallazgos principales</a></li>
+  <li><a href="#limitaciones-del-análisis" id="toc-limitaciones-del-análisis" class="nav-link" data-scroll-target="#limitaciones-del-análisis"><span class="header-section-number">8.2</span> 2. Limitaciones del análisis</a></li>
+  <li><a href="#trabajo-futuro" id="toc-trabajo-futuro" class="nav-link" data-scroll-target="#trabajo-futuro"><span class="header-section-number">8.3</span> 3. Trabajo Futuro</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Minería de Datos Aplicada a México: Sistema de Transporte Colectivo</h1>
+<h1 class="title"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Conclusiones</span></h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Authors</div>
-    <div class="quarto-title-meta-contents">
-             <p>Arlet Pinacho Báez (320287828) </p>
-             <p>Isaac Giovani Escobar González (321336400) </p>
-             <p>Kevin Jonathan Garduño Escobar (321070629) </p>
-             <p>Seldon Sautto Ramírez (321084163) </p>
-          </div>
-  </div>
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">June 1, 2026</p>
-    </div>
-  </div>
   
     
   </div>
@@ -211,36 +231,41 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>En este documento se describe la realización paso a paso del proyecto final para la materia de Almacenes y Minería de Datos. Dicho proyecto tiene como objetivo principal, no solo aplicar los conocimientos clave adquiridos a lo largo del curso por nuestro equipo, sino además permitir el desarrollo de una solución completa de minería de datos orientada a un problema real de México.</p>
-<p>Para ello, se exploran los siguientes puntos:</p>
+<section id="hallazgos-principales" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="hallazgos-principales"><span class="header-section-number">8.1</span> 1. Hallazgos principales</h2>
+<p>Gracias a este proyecto nos podemos dar cuenta de que muchas veces es posible anticipar y caracterizar los niveles de demanda del STC Metro de la CDMX a partir exclusivamente de sus registros históricos de afluencia.</p>
+<p><strong>Modelo supervisado — Clasificación de saturación</strong></p>
+<p>El clasificador Random Forest alcanzó una <em>accuracy</em> del <strong>69.10 %</strong> en el conjunto de prueba y un <strong>AUC-ROC macro de 0.8943</strong>, partiendo únicamente de variables contextuales: identificador de línea, identificador de estación, día de la semana, mes, año y cuatro variables binarias derivadas (quincena, festivo, temporada de lluvia, era post-boleto). La mejora de <strong>+34.40 puntos porcentuales</strong> sobre el clasificador trivial confirma que el modelo captura patrones genuinos del sistema y no se limita a reproducir la distribución de clases.</p>
+<p>El hallazgo más relevante del análisis de importancia de variables es que <strong>la estación codificada explica el 38.7 % de la varianza de clasificación</strong>, seguida del día de la semana (23.9 %) y la línea (12.9 %). Lo que quiere decir que los patrones de saturación estan determinados por la ubicación y el contexto temporal, más que por factores externos como la temporada de lluvias o los festivos.<br>
+Además, el modelo de clasificación tiene la capacidad para detectar el 71% de los días de máxima saturación por lo tanto anticipar 7 de cada 10 eventos críticos. <strong>Modelo no supervisado — Clustering de estaciones</strong></p>
+<p>El clustering K-Means con <span class="math inline">\(k = 3\)</span> mostró tres perfiles:</p>
 <ul>
-<li>Problemática a tratar</li>
-<li>Introducción al conjunto de datos</li>
-<li>Limpieza y preparación del conjunto de datos</li>
-<li>EDA</li>
-<li>Modelo supervisado
-<ul>
-<li>Implementación</li>
-<li>Métricas</li>
-<li>Análisis de resultados</li>
-</ul></li>
-<li>Modelo de Clustering
-<ul>
-<li>Implementación</li>
-<li>Visualización e interpretación de perfiles.</li>
-</ul></li>
-<li>Arquitectura y diseño</li>
-<li>Reutilización del modelo</li>
-<li>Conclusiones
-<ul>
-<li>Hallazgos</li>
-<li>Limitaciones</li>
-<li>Trabajo futuro</li>
-</ul></li>
-<li>Referencias</li>
+<li><strong>Alta Demanda Estructural</strong>: Estaciones principales con alta afluencia media y mayor volatilidad, donde predomina el pago con tarjeta.</li>
+<li><strong>Demanda Intermedia</strong>: Estaciones con flujo constante y forma de pago mixto.</li>
+<li><strong>Baja Intensidad</strong>: Estaciones periféricas con baja afluencia y predominio del pago en boleto o por gratuidad.</li>
 </ul>
+<p>Reveló que las estrategias de operación tarifaria y control de afluencia no deben aplicarse de manera uniforme, sino adaptarse a las características estructurales de cada estación.</p>
+<p>Este análisis no era observable a simple vista en los datos crudos.<br>
+Mientras que el modelo supervisado responde “¿qué nivel de saturación tendrá esta estación hoy?”, el clustering responde “¿qué tipo de estación es esta estructuralmente?”.</p>
+<p>La combinación de ambos modelos permite entender no solo el nivel de saturación esperado, sino también el perfil de cada estación, lo que puede ser útil para la planificación operativa y la asignación de recursos.</p>
+</section>
+<section id="limitaciones-del-análisis" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="limitaciones-del-análisis"><span class="header-section-number">8.2</span> 2. Limitaciones del análisis</h2>
+<p>A pesar de la robustez de los modelos, el análisis esta acotado por la naturaleza de los datos disponibles en el portal abierto:</p>
+<p><strong>Ausencia de capacidad instalada</strong><br>
+El dataset no incluye información sobre la capacidad máxima por línea o por estación. Esto limita la interpretación de los niveles de saturación, ya que no se puede cuantificar el grado de sobrecarga en términos absolutos, sino solo en relación a su propia historia.</p>
+<p><strong>Eventos no documentados</strong><br>
+Cierres temporales por mantenimiento, accidentes, eventos masivos en zonas aledañas o cortes de servicio no programados afectan la afluencia registrada pero no están identificados en el dataset. Los dos cierres documentados (Línea 12 y Línea 1) fueron filtrados explícitamente, pero episodios menores o no documentados pueden introducir ruido en los percentiles históricos y por tanto en la variable objetivo.</p>
+<p><strong>Fronteras de Decisión Difusas</strong><br>
+La matriz de confusión del modelo supervisado muestra que los errores ocurren casi exclusivamente entre clases adyacentes (ej. confundir un día “Alto” con “Medio”).</p>
+</section>
+<section id="trabajo-futuro" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="trabajo-futuro"><span class="header-section-number">8.3</span> 3. Trabajo Futuro</h2>
+<p>El paso más valioso para mejorar el modelo supervisado sería incorporar datos adicionales que permitan cuantificar la capacidad instalada y los eventos disruptivos. Esto podría incluir: - Datos de capacidad por estación y por línea, para transformar la variable objetivo en una medida de saturación relativa a la capacidad. - Registros de eventos disruptivos, para filtrar o etiquetar los días afectados y evitar que contaminen los patrones históricos.</p>
+<p>También se podrían incorporar datos meteorológicos más detallados, como temperatura o eventos climáticos extremos, para evaluar su impacto en la afluencia y la saturación.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -645,10 +670,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
+      <a href="./arquitectura.html" class="pagination-link" aria-label="Arquitectura y diseño">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Arquitectura y diseño</span></span>
+      </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./intro.html" class="pagination-link" aria-label="Afluencia en el STC de la CDMX">
-        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Afluencia en el STC de la CDMX</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./references.html" class="pagination-link" aria-label="Referencias">
+        <span class="nav-page-text">Referencias</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
