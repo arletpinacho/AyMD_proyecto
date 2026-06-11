@@ -695,7 +695,6 @@ gc.collect()
 # Solo se necesita la ruta del archivo .joblib y la definición de la clase.
 # ─────────────────────────────────────────────────────────────────────────────
 print("Demostración de reutilización del modelo serializado")
-print("(Celda independiente: simula inferencia sin re-entrenamiento)\n")
 
 modelo_cargado = ModeloClasificacion.cargar_modelo(ruta_modelo, seed=SEED)
 print(f"  Pipeline cargado desde : {ruta_modelo}")
@@ -729,7 +728,6 @@ probabilidades = modelo_cargado.predecir_proba(nuevos)
 print(f"  {'Reg':<4} {'Contexto':<55} {'Nivel Predicho':<16} {'Confianza'}")
 print("  " + "─" * 88)
 for i, (pred, proba, ctx) in enumerate(zip(predicciones, probabilidades, contexto)):
-    # CORRECCIÓN: Usar ModeloClasificacion en lugar de MetroSaturacionModel
     nivel  = ModeloClasificacion.NOMBRES_CLASES[pred]
     print(f"  {i:<4} {ctx:<55} {nivel:<16} {proba.max()*100:>7.1f}%")
 
