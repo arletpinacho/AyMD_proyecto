@@ -1,0 +1,441 @@
+# Clustering — Agrupamiento de Estaciones
+
+El objetivo del clustering es segmentar las estaciones del Sistema de Transporte Colectivo (STC) según su perfil estructural de demanda histórica, identificando grupos con comportamiento similar.
+
+Trabajaremos sobre el dataset `df_clustering.csv`, donde cada fila representa una estación y resume su comportamiento agregado en el periodo 2021–2026.  
+El análisis se apoya en la clase `ModeloClustering` definida en `src/modelo_clustering.py`, que encapsula la lógica de preprocesamiento, entrenamiento y evaluación del modelo de agrupamiento con un diseño orientado a objetos.
+
+## 1. Selección y Justificación de Variables
+
+Para el proceso de agrupamiento utilizaremos las siguientes variables:
+
+- `afluencia_media`
+- `afluencia_std`
+- `proporcion_prepago`
+- `proporcion_gratuidad`
+- `proporcion_boleto`
+
+### Justificación
+
+Estas variables capturan dimensiones complementarias del comportamiento de cada estación:
+
+- **afluencia_media**: mide la magnitud estructural de la demanda diaria.
+- **afluencia_std**: refleja la variabilidad o volatilidad en la afluencia.
+- **proporcion_prepago**, **proporcion_gratuidad** y **proporcion_boleto**: describen la composición del tipo de usuario y el esquema de pago predominante en cada estación.
+
+Estas variables permiten caracterizar a cada estación tanto en términos de volumen como de estabilidad y estructura de uso.
+
+## 2. Carga de Datos y configuración del Entorno
+Se importan las librerías necesarias y se carga el dataset de clustering para su análisis.
+
+```{python}
+import sys
+import os
+
+# Agregar el directorio raíz al path para importar el módulo src
+sys.path.insert(0, os.path.abspath("../.."))
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.decomposition import PCA
+
+from src import ModeloClustering
+
+# Cargar dataset de clustering
+df_cluster = pd.read_csv("../../data/processed/df_clustering.csv")
+
+print(f"Dimensiones del dataset: {df_cluster.shape}")
+print(f"\nColumnas disponibles:\n{df_cluster.columns.tolist()}")
+df_cluster.head()
+```
+
+## 3. Preprocesamiento
+
+Antes de aplicar K-Means es necesario normalizar las variables, ya que el algoritmo utiliza distancia euclidiana para formar los grupos.
+
+Si no se escalan las variables, aquellas con mayor magnitud (por ejemplo `afluencia_media`) dominarían el cálculo de distancia, generando clusters sesgados.
+
+Dado que nuestras variables están en distintas escalas:
+
+- `afluencia_media` y `afluencia_std` están en miles.
+- Las proporciones están en un rango entre 0 y 1.
+
+Procedemos a estandarizar todas las variables utilizando la clase `ModeloClustering` la cual encapsula este proceso dentro de su pipeline.
+
+```{python}
+# Selección de variables numéricas
+variables = [
+    "afluencia_media",
+    "afluencia_std",
+    "proporcion_prepago",
+    "proporcion_gratuidad",
+    "proporcion_boleto"
+]
+
+X = df_cluster[variables]
+
+print("Estadísticas descriptivas de las variables:")
+X.describe().round(4)
+
+```
+
+### Justificación
+
+La estandarización transforma cada variable para que tenga:
+
+- Media = 0
+- Desviación estándar = 1
+
+Esto asegura que todas las variables contribuyan de manera equilibrada al cálculo de distancias en el algoritmo K-Means.
+
+Dado que el número de variables es reducido (5), no es necesario aplicar reducción de dimensionalidad en esta etapa.
+
+## 4. Selección del Algoritmo y Justificación
+
+Para el proceso de agrupamiento utilizaremos el algoritmo **K-Means**, una técnica de clustering basada en partición que agrupa observaciones minimizando la varianza interna dentro de cada grupo.  
+Este algoritmo esta implementado en la clase `ModeloClustering`.
+
+### Justificación del uso de K-Means
+
+El uso de K-Means es adecuado en este contexto por las siguientes razones:
+
+- Las variables utilizadas son numéricas y continuas.
+- El número de observaciones (estaciones) es moderado.
+- Se busca segmentar estaciones en grupos con perfiles estructurales diferenciados.
+- El objetivo es interpretar los perfiles promedio de cada grupo, lo cual es más sencillo con K-Means que con algoritmos basados en densidad como DBSCAN.
+
+Dado que previamente se realizó una estandarización de las variables dentro del pipeline, el uso de distancia euclidiana (empleada por K-Means) es apropiado y no introduce sesgos por diferencias de escala.
+
+En este contexto, K-Means permite identificar segmentos estructurales de estaciones tales como:
+
+- Estaciones de alta demanda estructural.
+- Estaciones con alta variabilidad.
+- Estaciones con predominancia de ciertos esquemas de pago.
+
+## 5. Elección del Número de Grupos
+
+El algoritmo K-Means requiere especificar previamente el número de clusters \(k\). 
+Para determinar un valor adecuado utilizamos dos criterios cuantitativos:
+
+- Método del codo (inercia)
+- Coeficiente de silueta
+
+Ambos permiten evaluar la calidad del agrupamiento desde distintas perspectivas: compacidad interna y separación entre grupos.
+
+Para esto el método `evaluar_k` de la clase `ModeloClustering` construye pipelines temporales independientes para cada valor de \(k\), lo ajusta sobre los datos y calcula las métricas correspondientes, permitiendo que el procesamiento sea identico al entrenamiento final. 
+
+```{python}
+# Instanciar modelo con semilla definida
+modelo_eval = ModeloClustering(n_clusters=2, seed=42)
+
+# Evaluar k desde 2 hasta 8
+inercias, silhouettes = modelo_eval.evaluar_k(X, k_max=8)
+
+K_range_eval = range(2, 9)
+```
+
+### 5.1 Método del Codo (Inercia)
+
+La **inercia** mide la suma de las distancias cuadradas entre cada punto y el centroide de su cluster.  
+A menor inercia, más compactos son los grupos.
+
+```{python}
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Gráfica del codo
+axes[0].plot(K_range_eval, inercias, marker="o", color="#2c7bb6", linewidth=2, markersize=8)
+axes[0].set_title("Método del Codo (Inercia)", fontsize=14, fontweight="bold")
+axes[0].set_xlabel("Número de clusters (k)")
+axes[0].set_ylabel("Inercia")
+axes[0].grid(True, alpha=0.4)
+axes[0].axvline(x=3, color="#e74c3c", linestyle="--", alpha=0.7, label="k = 3 (seleccionado)")
+axes[0].legend()
+
+# Gráfica del coeficiente de silueta
+axes[1].plot(K_range_eval, silhouettes, marker="o", color="#1a9850", linewidth=2, markersize=8)
+axes[1].set_title("Coeficiente de Silueta", fontsize=14, fontweight="bold")
+axes[1].set_xlabel("Número de clusters (k)")
+axes[1].set_ylabel("Silhouette Score")
+axes[1].grid(True, alpha=0.4)
+axes[1].axvline(x=3, color="#e74c3c", linestyle="--", alpha=0.7, label="k = 3 (seleccionado)")
+axes[1].legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+#### Interpretación
+
+El número óptimo de clusters suele identificarse en el punto donde la curva deja de descender de forma pronunciada y comienza a aplanarse.  
+El **coeficiente de silueta** evalúa qué tan bien asignado está cada punto a su cluster en comparación con los demás clusters.
+
+Su valor oscila entre -1 y 1:
+
+- Cercano a 1 → grupos bien definidos y separados.
+- Cercano a 0 → solapamiento entre clusters.
+- Negativo → mala asignación.
+
+El valor de \(k\)  que maximiza el silhouette score indica una mejor separación entre grupos.  
+| k | Inercia | Silhouette Score |
+|---|---------|-----------------|
+```{python}
+#| echo: false
+for k, (ine, sil) in enumerate(zip(inercias, silhouettes), start=2):
+    print(f"| {k} | {ine:.2f} | {sil:.4f} |")
+```
+
+### Selección Final de \(k\)
+
+Con base en los resultados obtenidos:
+
+- El método del codo muestra una disminución pronunciada de la inercia hasta \(k = 3\), a partir del cual la mejora se vuelve marginal.
+- El coeficiente de silueta alcanza su valor máximo en \(k = 3\), indicando una mejor separación entre grupos.
+
+Por tanto, se selecciona \(k = 3\) como el número óptimo de clusters.
+
+Esta elección equilibra adecuadamente:
+
+- Compacidad interna de los grupos.
+- Separación entre clusters.
+- Interpretabilidad estructural de los perfiles de estación.
+
+En la siguiente sección se aplicará el modelo K-Means utilizando \(k = 3\) para segmentar las estaciones del sistema.
+
+## 6. Aplicación del Modelo K-Means
+
+Con base en los criterios de inercia y coeficiente de silueta, se seleccionó \(k = 3\) como el número óptimo de clusters.
+
+Procedemos a entrenar el modelo K-Means con este valor.
+
+```{python}
+# Instanciar el modelo con k=3
+kmeans_final = ModeloClustering(n_clusters=3, seed=42)
+
+# Entrenar y obtener resultados
+resultados = kmeans_final.entrenar(X)
+
+print("Resultados del Entrenamiento:")
+print(f"Estado        : {resultados['estado']}")
+print(f"Clusters (k)  : {resultados['n_clusters']}")
+print(f"Inercia       : {resultados['inercia']:.2f}")
+print(f"Silhouette    : {resultados['silhouette_score']:.4f}")
+```
+
+### 6.1 Interpretación Inicial de los Clusters
+
+Tras aplicar el algoritmo K-Means con \(k = 3\), cada estación del sistema fue asignada a uno de los tres grupos identificados.
+
+El agrupamiento permite observar que las estaciones no se comportan de manera homogénea, sino que existen perfiles diferenciados dentro de la red.
+
+En términos generales, los clusters representan:
+
+- Diferencias en magnitud promedio de afluencia.
+- Distintos niveles de estabilidad o volatilidad en la demanda.
+- Variaciones en la composición del tipo de pago predominante.
+
+```{python}
+# Información del modelo vía método heredado de ModeloBase
+print(kmeans_final)
+```
+
+```{python}
+# Asignar etiquetas de cluster al dataframe original
+df_cluster["cluster"] = kmeans_final.predecir(X)
+
+df_cluster[["estacion", "linea", "cluster"] + variables].head(10)
+```
+
+## 7. Perfilado de los Clusters
+
+Para interpretar los grupos identificados por K-Means, analizamos las estadísticas promedio de cada variable dentro de cada cluster.
+
+### 7.1 Centroides en Escala Original
+
+El método `Obtener_centroides()` de `ModeloClustering` aplica la transformación inversa del `StandardScaler` para devolver los centroides en las unidades originales, facilitando la interpretación.
+
+```{python}
+centroides = kmeans_final.Obtener_centroides()
+centroides.index.name = "Cluster"
+print("Centroides por cluster (escala original):\n")
+centroides.round(2)
+```
+
+### 7.2 Perfiles Estadísticos por Cluster
+
+```{python}
+perfil_clusters = df_cluster.groupby("cluster")[variables].mean().round(2)
+print("Perfil promedio por cluster:\n")
+perfil_clusters
+```
+
+### 7.3 Visualización de Perfiles
+
+```{python}
+fig, axes = plt.subplots(1, len(variables), figsize=(16, 5))
+
+colores_clusters = {0: "#e74c3c", 1: "#f39c12", 2: "#2ecc71"}
+
+for i, var in enumerate(variables):
+    valores = [perfil_clusters.loc[c, var] for c in range(3)]
+    barras = axes[i].bar(
+        [f"C{c}" for c in range(3)],
+        valores,
+        color=[colores_clusters[c] for c in range(3)],
+        edgecolor="white",
+        linewidth=1.5
+    )
+    axes[i].set_title(var.replace("_", "\n"), fontsize=10, fontweight="bold")
+    axes[i].set_ylabel("")
+    axes[i].grid(axis="y", alpha=0.3)
+
+    for bar, val in zip(barras, valores):
+        axes[i].text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() * 1.01,
+            f"{val:.2f}",
+            ha="center", va="bottom", fontsize=9
+        )
+
+plt.suptitle("Perfil Promedio por Cluster", fontsize=14, fontweight="bold", y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
+## 8 Interpretación de Perfiles
+
+A partir de las medias observadas en cada grupo, se identifican tres perfiles estructurales diferenciados:
+
+### Cluster 0 — Alta Demanda Estructural
+
+- Mayor `afluencia_media`.
+- Elevada `afluencia_std` (mayor volatilidad).
+- Predominio del prepago.
+  
+Corresponde a estaciones troncales o nodos estratégicos del sistema con concentración estructural alta de pasajeros.
+
+### Cluster 1 — Demanda Intermedia
+
+- Afluencia_media moderada.
+- Variabilidad media.
+- Composición de pago relativamente equilibrada.
+
+Representa estaciones con flujo constante pero sin saturación estructural extrema.
+
+
+### Cluster 2 — Baja Intensidad Estructural
+
+- Menor afluencia_media.
+- Variabilidad relativamente baja.
+- En algunos casos mayor proporción relativa de gratuidad o boleto.
+
+Corresponde a estaciones periféricas o con menor flujo estructural.
+
+
+## 9. Asignación de Etiquetas Interpretativas
+
+Para facilitar la comprensión del modelo, asignamos etiquetas descriptivas a los clusters:
+
+```{python}
+# Usar el diccionario de nombres definido en la clase ModeloClustering
+df_cluster["perfil_cluster"] = df_cluster["cluster"].map(ModeloClustering.NOMBRES_CLUSTERS)
+
+print("Distribución de estaciones por perfil:")
+print(df_cluster["perfil_cluster"].value_counts())
+```
+
+```{python}
+df_cluster[["estacion", "linea", "cluster", "perfil_cluster"]].head(10)
+```
+
+De esta manera, el clustering no solo segmenta numéricamente las estaciones, sino que proporciona una interpretación estructural clara y coherente con la dinámica observada en el sistema.
+
+## 10. Visualización de Clusters
+
+### 10.1 Visualización de Clusters con PCA
+
+Para visualizar los grupos en un espacio bidimensional, aplicamos reducción de dimensionalidad mediante PCA.
+
+```{python}
+# Obtener datos en escala estandarizada desde el pipeline interno
+scaler_interno = kmeans_final.pipeline_.named_steps["scaler"]
+X_scaled_final = scaler_interno.transform(X)
+
+# Aplicar PCA sobre los datos normalizados
+pca = PCA(n_components=2, random_state=42)
+X_pca = pca.fit_transform(X_scaled_final)
+
+df_cluster["pca1"] = X_pca[:, 0]
+df_cluster["pca2"] = X_pca[:, 1]
+
+varianza_explicada = pca.explained_variance_ratio_
+print(f"Varianza explicada — PC1: {varianza_explicada[0]:.1%}  |  PC2: {varianza_explicada[1]:.1%}")
+print(f"Varianza total explicada: {sum(varianza_explicada):.1%}")
+```
+
+```{python}
+plt.figure(figsize=(8,6))
+
+sns.scatterplot(
+    data=df_cluster,
+    x="pca1",
+    y="pca2",
+    hue="perfil_cluster",
+    palette="Set2"
+)
+
+plt.title("Visualización de Clusters (PCA)")
+plt.xlabel("Componente Principal 1")
+plt.ylabel("Componente Principal 2")
+plt.legend(title="Perfil")
+plt.grid(True)
+plt.show()
+```
+
+La separación observada confirma que los grupos identificados presentan diferencias estructurales en el espacio de características.
+
+### 10.2 Distribución de Estaciones por Cluster
+
+```{python}
+df_cluster["perfil_cluster"].value_counts()
+```
+
+Esta distribución permite identificar qué proporción de estaciones pertenece a cada perfil estructural.
+
+
+### 10.3 Distribución de Clusters por Línea
+
+Para analizar si ciertos perfiles se concentran en líneas específicas:
+
+```{python}
+pd.crosstab(
+    df_cluster["linea"],
+    df_cluster["perfil_cluster"]
+)
+```
+
+Esto permite identificar si determinadas líneas concentran mayor proporción de estaciones de alta demanda estructural o si presentan un comportamiento más heterogéneo.
+
+## 11. Persistencia del Modelo
+
+El modelo entrenado se guarda en disco usando el método `guardar_modelo()` heredado de `ModeloBase`. Esto permite reutilizar los centroides y el scaler sin necesidad de re-entrenar.
+
+```{python}
+# Guardar modelo entrenado
+ruta_modelo = "../../models/modelo_clustering.joblib"
+ruta_guardada = kmeans_final.guardar_modelo(ruta_modelo)
+print(f"Modelo guardado en: {ruta_guardada}")
+```
+
+## 12 Interpretación Final del Clustering
+
+El análisis de agrupamiento confirma que la red del Metro no es homogénea, sino que presenta perfiles estructurales claramente diferenciados:
+
+- Un grupo de estaciones troncales con alta concentración de pasajeros.
+- Un grupo intermedio con demanda estable.
+- Un grupo periférico de baja intensidad estructural.
+
+Esta segmentación complementa el modelo supervisado al proporcionar una visión estructural del sistema, permitiendo identificar patrones ocultos que no se observan únicamente a partir de análisis descriptivos o clasificación diaria.
+
+El clustering aporta una dimensión estratégica al análisis, al segmentar la red en perfiles operativos diferenciados que pueden ser utilizados para planificación, mantenimiento y gestión de saturación.

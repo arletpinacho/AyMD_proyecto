@@ -1,0 +1,158 @@
+# Arquitectura y diseño
+
+La arquitectura y el diseño de este proyecto se basa en una arquitectura orientada a objetos ***(POO)*** del modulo `src`. 
+Este módulo contiene las clases que representan los modelos de clasificación y clustering, así como una clase base para compartir funcionalidades comunes entre ellos.  
+Además se aplicaron patrones de diseño.
+
+## 1. Arquitectura orientada a objetos
+
+### 1.1 Visión General del Módulo `src/`
+
+La mayor parte del código del proyecto está organizado en un paquete Python (`src/`) con siete archivos:
+
+```
+src/
+├── __init__.py              ← Punto de entrada público del paquete
+├── demostracion.py          ← Script de demostración para mostrar la reutilización del modelo de clasificación entrenado
+├── limpieza.py              ← Funciones de carga y limpieza del dataset crudo
+├── modelo_base.py           ← Clase abstracta (contrato común)
+├── modelo_clasificacion.py  ← Implementación supervisada (Random Forest)
+├── modelo_clustering.py     ← Implementación no supervisada (K-Means)
+└── preparacion.py           ← Funciones de transformación y construcción de datasets derivados
+```
+
+### 1.2 Clases y Responsabilidades
+
+**`ModeloBase` (abstracta)**  
+Define la interfaz común y funcionalidades compartidas para ambos tipos de modelos. Incluye métodos abstractos que deben ser implementados por las clases hijas, como `construir_pipeline` y `entrenar`. 
+Además, proporciona la implementación concreta de `guardar_modelo` y `cargar_modelo` que ambas subclases heredan sin duplicación de código.
+
+**`ModeloClasificacion`**  
+Implementa el modelo supervisado completo: construcción del pipeline `StandardScaler → RandomForestClassifier`, búsqueda de hiperparámetros con `RandomizedSearchCV` (validación cruzada estratificada interna), evaluación multiclase con todas las métricas relevantes y análisis de importancia de variables por impureza de Gini.
+
+Expone además constantes de clase (`NOMBRES_CLASES`, `LINEA_MAPPING`, `MES_MAPPING`) que permiten a los notebooks presentar resultados con etiquetas legibles sin duplicar la información en múltiples archivos.
+
+**`ModeloClustering`**  
+Implementa el agrupamiento no supervisado. Su método `_construir_pipeline_base(n_clusters)` acepta un parámetro opcional que permite construir pipelines temporales con distintos valores de k durante `evaluar_k`, garantizando que el preprocesamiento sea consistente en la evaluación y en el entrenamiento final. 
+`Obtener_centroides` aplica la transformación inversa del scaler para devolver los centroides en las unidades originales de cada variable.
+
+### 1.3 Módulos de Preprocesamiento
+Los módulos `limpieza.py` y `preparacion.py` contienen funciones específicas para la carga, limpieza y transformación de los datos, en lugar de ser clases, lo que es apropiado dado que no mantienen estado ni necesitan herencia.
+
+**`limpieza.py`**  
+Contiene las funciones de carga y limpieza del dataset crudo. `cargar_datos` lee el CSV con la codificación correcta. 
+`limpiar_dataframe` corrige los problemas de codificación de acentos en las estaciones, normaliza el campo `linea` eliminando el prefijo "Línea " y añade la variable binaria `post_boleto`. 
+`normalizar_str` unifica mayúsculas y elimina acentos para que los joins y agrupaciones sean estables. `filtrar_cierres` elimina los registros con afluencia cero correspondientes a los cierres documentados de Líneas 1 y 12, evitando que periodos de inoperación contaminen los percentiles históricos.
+
+**`preparacion.py`**  
+Contiene las transformaciones que producen los tres datasets procesados. `pivot_tipo_pago` desnormaliza los registros por tipo de pago en columnas separadas y calcula `afluencia_total`. 
+`agregar_variable_objetivo` calcula los percentiles históricos p25, p60 y p85 por estación y los usa para construir `nivel_saturacion`, la variable target del modelo supervisado. 
+`agregar_vars_temporales` añade `dia_semana`, `es_festivo`, `es_quincena` y `lluvia_historica`. `codificar_categoricas` aplica `LabelEncoder` a las variables categóricas. `construir_df_clustering` agrega los datos por estación calculando las proporciones de pago y estadísticos de afluencia que usa el modelo no supervisado.
+
+### 1.4 Script de demostración
+El script `demostracion.py` muestra cómo cargar un modelo de clasificación previamente entrenado en un archivo `.joblib` y usarlo para hacer predicciones en nuevos datos. Esto demuestra la reutilización del modelo entrenado y la persistencia del modelo.
+
+## 2. Patrones de diseño aplicados
+
+### 2.1 Patrón Strategy
+El patrón Strategy  te permite definir una familia de algoritmos, colocar cada uno de ellos en una clase separada y hacer sus objetos intercambiables [@strategy]. Este patrón sugiere que tomes esa clase que hace algo específico de muchas formas 
+diferentes y extraigas todos esos algoritmos para colocarlos en clases separadas llamadas estrategias.
+
+El patrón Strategy se refleja en la estructura de clases, donde `ModeloBase` define la interfaz abstracta común y las subclases `ModeloClasificacion` y `ModeloClustering` son las estrategias concretas que implementan estrategias específicas para clasificación y clustering respectivamente. 
+Esto permite cambiar fácilmente entre diferentes tipos de modelos sin modificar el código que los utiliza, promoviendo la flexibilidad y la extensibilidad del proyecto.
+
+Elegimos este patrón porque tiene una ventaja muy grande la cual es que cualquier código cliente puede operar sobre un `ModeloBase` sin necesidad de saber qué algoritmo hay debajo. 
+Cambiar de Random Forest a Gradient Boosting, o de K-Means a DBSCAN, no requeriría modificar nada fuera de `src/`.
+
+### 2.2 Patrón Pipeline
+El patrón Pipeline usa una serie de etapas ordenadas para procesar los datos de entrada. Cada etapa es responsable de una parte específica del procesamiento, y el resultado de una etapa se pasa a la siguiente, lo que representa una etapa de una tubería [@pipeline].
+
+Dentro de cada clase concreta, el procesamiento de datos se encapsula utilizando el patrón Pipeline de `scikit-learn`. Lo que nos garantiza que:  
+- El `StandardScaler` se aplica de manera consistente tanto en la evaluación de hiperparámetros como en el entrenamiento final.
+- El objeto serializado con `joblib` contiene tanto el escalador ajustado como el modelo entrenado, haciendo la persistencia y la reutilización del modelo más sencilla y robusta.
+- La serialización con `guardar_modelo` y la recarga con `cargar_modelo` funcionan sin problemas, ya que el pipeline completo se guarda como un solo objeto.
+
+## 3. Diagrama de clases
+
+```{mermaid}
+%%{init: {
+  'theme': 'default',
+  'themeVariables': {
+    'darkMode': false,
+    'background': '#ffffff'
+  }
+}}%%
+classDiagram
+    class ModeloBase {
+        <<Abstracta>>
+        +int seed
+        +Pipeline pipeline_
+        +list feature_names_
+        +entrenar(X, y, **kwargs)* dict
+        +predecir(X)* ndarray
+        +guardar_modelo(ruta str) str
+        +cargar_modelo(ruta str, seed int)$ ModeloBase
+        +obtener_info_modelo() dict
+        +__str__() str
+    }
+
+    class ModeloClasificacion {
+        +list NOMBRES_CLASES
+        +list COLORES_CLASES
+        +dict LINEA_MAPPING
+        +dict MES_MAPPING
+        +dict DEFAULT_PARAM_DISTRIBUTIONS
+        +RandomizedSearchCV busqueda_
+        -_construir_pipeline_base() Pipeline
+        +entrenar(X_train, y_train, param_distributions, n_iter, n_splits) dict
+        +predecir(X) ndarray
+        +predecir_proba(X) ndarray
+        +evaluar(X_test, y_test) dict
+        +accuracy_entrenamiento(X_train, y_train) float
+        +importancia_variables() DataFrame
+        +resultados_busqueda() DataFrame
+        +baseline_dummy(X_train, y_train, X_test, y_test) float
+    }
+
+    class ModeloClustering {
+        +int n_clusters
+        +dict NOMBRES_CLUSTERS
+        +dict metricas_validacion_
+        -_construir_pipeline_base(n_clusters) Pipeline
+        +entrenar(X, y) dict
+        +predecir(X) ndarray
+        +evaluar_k(X, k_max) Tuple
+        +Obtener_centroides() DataFrame
+    }
+
+    ModeloBase <|-- ModeloClasificacion : Hereda
+    ModeloBase <|-- ModeloClustering : Hereda
+
+    style ModeloBase fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style ModeloClasificacion fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style ModeloClustering fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+```
+
+## 4. Persistencia de modelos
+Ambos modelos heredan los métodos `guardar_modelo` y `cargar_modelo` de `ModeloBase`, lo que garantiza una forma consistente de persistir y reutilizar los modelos entrenados. 
+La serialización se realiza utilizando `joblib`.
+
+```{python}
+import sys, os
+sys.path.insert(0, os.path.abspath("../.."))
+
+import pandas as pd
+from src import ModeloClasificacion, ModeloClustering
+
+# Verificar existencia de los modelos guardados
+RUTA_CLASIFICACION = "../../models/rf_clasificacion_metro.joblib"
+RUTA_CLUSTERING    = "../../models/modelo_clustering.pkl"
+
+for ruta, nombre in [(RUTA_CLASIFICACION, "Clasificación"), (RUTA_CLUSTERING, "Clustering")]:
+    existe = os.path.exists(ruta)
+    if existe:
+        kb = os.path.getsize(ruta) / 1024
+        print(f"  [{nombre}] Encontrado  — {ruta}  ({kb:.1f} KB)")
+    else:
+        print(f"  [{nombre}] No encontrado — ejecuta primero clasificacion.qmd y clustering.qmd")
+```

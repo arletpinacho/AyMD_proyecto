@@ -1,0 +1,731 @@
+# Modelo de clasificación
+
+En esta sección se construye un modelo de clasificación supervisada para predecir la variable objetivo `nivel_saturacion`, que categoriza el nivel de saturación diario de cada estación del STC Metro de la CDMX en cuatro niveles: **bajo** (0), **medio** (1), **alto** (2) y **crítico** (3). Esta variable fue definida en la etapa de preparación de datos mediante percentiles históricos de afluencia calculados de manera individual por estación, de modo que cada punto de la red se compara contra su propio historial y no contra estaciones de distinto perfil de demanda.
+
+El modelo opera en un escenario de **clasificación en tiempo real**: dado el conteo de afluencia registrado durante el día de operación, junto con el contexto de la línea, el mes, el año y la era de pago vigente, el sistema clasifica automáticamente el nivel de saturación alcanzado. Este enfoque tiene valor operativo directo para el STC Metro, ya que automatiza la etiquetación de jornadas sin depender del cálculo manual de percentiles por estación.
+
+Se empleará el algoritmo **Random Forest** con el **Patrón de Diseño Pipeline**, que encapsula las etapas de escalado y clasificación en una unidad cohesiva, serializable y reproducible. El código estará organizado mediante **Programación Orientada a Objetos (POO)** a través de la clase `ModeloClasificacion`, que encapsula las responsabilidades de construcción, entrenamiento, evaluación y persistencia del modelo, separando la lógica del modelo de la lógica de presentación del reporte. Los hiperparámetros se optimizarán mediante `RandomizedSearchCV` con validación cruzada estratificada interna (`StratifiedKFold`) en ejecución secuencial para garantizar la estabilidad en equipos con recursos de memoria limitados.
+
+
+## Configuración del entorno y librerías
+
+Se importan todas las herramientas necesarias y se fija la semilla global `SEED = 42` para garantizar la reproducibilidad completa del experimento, como lo exigen los requisitos técnicos del proyecto.
+
+```{python}
+import sys
+import os
+
+ruta_raiz = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
+
+if ruta_raiz not in sys.path:
+    sys.path.insert(0, ruta_raiz)
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import sklearn
+import warnings
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import ConfusionMatrixDisplay, roc_curve, auc, roc_auc_score
+from sklearn.preprocessing import label_binarize
+
+# Importar la clase del modelo desde src
+from src.modelo_clasificacion import ModeloClasificacion
+
+warnings.filterwarnings("ignore")
+
+# Configuración visual global
+sns.set_style("whitegrid")
+plt.rcParams['figure.figsize'] = (12, 6)
+plt.rcParams['font.size'] = 11
+
+# Semilla para reproducibilidad
+SEED = 42
+np.random.seed(SEED)
+
+# Acceder a constantes desde la clase
+NOMBRES_CLASES = ModeloClasificacion.NOMBRES_CLASES
+COLORES_CLASES = ModeloClasificacion.COLORES_CLASES
+
+print(f"scikit-learn : {sklearn.__version__}")
+print(f"pandas       : {pd.__version__}")
+print(f"numpy        : {np.__version__}")
+print(f"seaborn      : {sns.__version__}")
+print(f"\nSEED fijada  : {SEED}")
+```
+
+
+## Carga de datos e información del dataset
+
+Se carga el archivo `df_clasificacion.csv` generado en la etapa de limpieza. Este dataset contiene únicamente las columnas seleccionadas para el modelo supervisado y ya fue sometido a los tratamientos documentados en `limpieza.qmd`: eliminación de registros con afluencia cero durante los cierres documentados de Líneas 1 y 12, cálculo de percentiles históricos por estación y codificación numérica de variables categóricas con `LabelEncoder`.
+
+```{python}
+df = pd.read_csv("../../data/processed/df_clasificacion.csv")
+
+print(" Información general del dataset ")
+print(f"  Dimensiones : {df.shape[0]:,} registros  ×  {df.shape[1]} variables")
+print(f"  Columnas    : {df.columns.tolist()}")
+
+print("\n Primeros 5 registros ")
+print(df.head())
+
+print("\n Tipos de datos ")
+print(df.dtypes)
+
+print("\n Valores faltantes ")
+nulos = df.isnull().sum()
+print(nulos[nulos > 0] if nulos.any() else "  Sin valores faltantes.")
+
+print("\n Estadísticas descriptivas ")
+print(df.describe().round(2))
+```
+
+
+## Definición de la variable objetivo y predictoras
+
+### Variable objetivo
+
+La variable `nivel_saturacion` es el objetivo de predicción. Toma cuatro valores enteros que representan el nivel de saturación diario de una estación medido contra su historial propio:
+
+| Valor | Etiqueta   | Definición                                   |
+|-------|------------|----------------------------------------------|
+| 0     | **Bajo**   | Afluencia ≤ percentil 25 histórico           |
+| 1     | **Medio**  | p25 < Afluencia ≤ percentil 60              |
+| 2     | **Alto**   | p60 < Afluencia ≤ percentil 85              |
+| 3     | **Crítico**| Afluencia > percentil 85                     |
+
+Esta variable es la más adecuada para el objetivo del proyecto porque operacionaliza directamente el concepto de **saturación relativa** en lugar de absoluta: una afluencia de 5 000 pasajeros puede ser crítica para una estación pequeña de Línea B y completamente normal para una estación central de Línea 2. Al construirla desde los percentiles individuales de cada estación, el modelo aprende patrones de demanda que son comparables y generalizables a través de toda la red del STC.
+
+```{python}
+y = df['nivel_saturacion']
+
+print("Distribución de la variable objetivo:")
+counts      = y.value_counts().sort_index()
+percentages = y.value_counts(normalize=True).sort_index() * 100
+
+for i in range(4):
+    print(f"  Clase {i} – {NOMBRES_CLASES[i]:8s}: {counts[i]:8,} registros  ({percentages[i]:.2f}%)")
+
+# Visualización
+labels = [f"{NOMBRES_CLASES[i]}\n(clase {i})" for i in range(4)]
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+axes[0].bar(labels, counts.values, color=COLORES_CLASES, edgecolor='black')
+axes[0].set_title('Distribución de nivel_saturacion', fontsize=12, fontweight='bold')
+axes[0].set_xlabel('Nivel de saturación'); axes[0].set_ylabel('Frecuencia')
+for i, (v, pct) in enumerate(zip(counts.values, percentages.values)):
+    axes[0].text(i, v + counts.max()*0.01, f"{pct:.1f}%",
+                 ha='center', fontweight='bold', fontsize=10)
+
+axes[1].pie(counts.values, labels=labels, colors=COLORES_CLASES,
+            autopct='%1.1f%%', startangle=90, pctdistance=0.75)
+axes[1].set_title('Proporción de nivel_saturacion', fontsize=12, fontweight='bold')
+plt.tight_layout(); plt.show()
+
+```
+
+La distribución resulta de los umbrales percentílicos fijados en la etapa de limpieza. Cada clase agrupa los días cuya afluencia diaria cae dentro del rango correspondiente al historial propio de la estación:
+
+- **Bajo (~25 %):** días de baja demanda, con afluencia por debajo del primer cuartil histórico de cada estación.
+- **Medio (~35 %):** franja de operación normal, entre los percentiles 25 y 60; es la clase mayoritaria del dataset.
+- **Alto (~25 %):** demanda elevada, entre los percentiles 60 y 85.
+- **Crítico (~15 %):** jornadas de máxima saturación, con afluencia por encima del percentil 85; es la clase menos frecuente.
+
+El desbalance leve (especialmente la menor representación de Crítico) justifica el uso de `class_weight='balanced'` en el clasificador, pues nos garantiza que el modelo preste atención a las clases menos frecuentes durante el entrenamiento, asignándoles un peso inversamente proporcional a su frecuencia, en este caso nos resulta útil para nuestra clase Crítico y su representación del 15 % (la clase con menor frecuencia dentro de nuestro dataset).
+
+### Variables predictoras incluidas
+
+```{python}
+X = df.drop('nivel_saturacion', axis=1)
+
+print(f"Total de features : {X.shape[1]}")
+print(f"Variables         : {X.columns.tolist()}")
+
+linea_mapping = ModeloClasificacion.LINEA_MAPPING
+mes_mapping   = ModeloClasificacion.MES_MAPPING
+```
+
+Las nueve variables predictoras empleadas en el modelo y su justificación son las siguientes:
+
+| Variable | Descripción y justificación |
+|---|---|
+| `linea_encoded` | Línea del STC codificada con LabelEncoder (0–11). Cada línea tiene un perfil de demanda estructuralmente distinto según su recorrido y zona de la ciudad. |
+| `estacion_encoded` | Identificador único de la estación (LabelEncoder). Es vital para el modelo ya que la saturación es un concepto relativo: permite al clasificador aislar la escala física e infraestructura de cada andén. |
+| `dia_semana` | Día de la semana extraído de la fecha (0=Lunes, 6=Domingo). Captura los patrones de movilidad intra-semanales, diferenciando la alta demanda en días laborales de las caídas en fines de semana. |
+| `mes_encoded` | Mes del año codificado con LabelEncoder (0–11, orden alfabético). Captura la estacionalidad: inicio de semestres (ene, ago) frente a periodos vacacionales (dic, jul). |
+| `anio` | Año de la medición (2021–2026). Registra la tendencia longitudinal del sistema: recuperación post-COVID, cierres de líneas y crecimiento posterior. |
+| `es_festivo` | Variable binaria (1=Festivo, 0=Laborable). Captura caídas drásticas de demanda en días feriados oficiales. |
+| `es_quincena` | Variable binaria para días 14, 15, 30 y 31. Modela los picos de movilidad asociados a las dinámicas económicas y de consumo en la ciudad. |
+| `lluvia_historica` | Variable binaria (1=Mayo–Octubre, 0=Resto). Indica la temporada de lluvias en la CDMX, factor climático que históricamente incrementa el uso del transporte subterráneo. |
+| `post_boleto` | Indicador binario del cambio de método de pago (0 = antes del 20-abr-2024, 1 = después). Controla si la transición al prepago exclusivo alteró los flujos de entrada en las estaciones. |
+
+### Variables excluidas y justificación
+
+El dataset de clasificación fue construido a partir de un dataset intermedio más amplio que también contenía las siguientes columnas, las cuales fueron deliberadamente excluidas del modelo supervisado por las razones que se describen a continuación:
+
+| Variable excluida | Motivo de exclusión |
+|---|---|
+| `fecha` | Su información temporal ya está capturada de forma modelable por `dia_semana`, `mes_encoded`, `anio` y `post_boleto`. En formato datetime no es compatible con scikit-learn. |
+| `linea` (texto crudo) | Variable categórica original reemplazada por `linea_encoded` (LabelEncoder), compatible con scikit-learn. |
+| `estacion` (texto crudo) | Variable categórica original reemplazada por `estacion_encoded`. |
+| `mes` (texto crudo) | Variable categórica original reemplazada por `mes_encoded`. |
+| `afluencia_boleto`, `afluencia_prepago`, `afluencia_gratuidad` | Las tres suman exactamente `afluencia_total`, generando **multicolinealidad perfecta**. Incluirlas sería redundante e inflaría artificialmente el espacio de features. |
+| `p25`, `p60`, `p85` | Son los percentiles históricos utilizados para **construir** `nivel_saturacion`. Incluirlos como predictores constituiría **filtración de datos (data leakage)**. |
+| `afluencia_total` | **Excluida para evitar Filtración de Datos (Data Leakage Crítico):** Dado que la variable objetivo se deriva matemáticamente de esta métrica, mantenerla provocaría que el algoritmo memorice reglas de umbrales condicionales directos en lugar de aprender el comportamiento del sistema. Su eliminación eleva la complejidad del problema, forzando al modelo a aprender patrones puramente contextuales. |
+
+```{python}
+# Visualización de distribuciones de las 9 variables predictoras
+fig, axes = plt.subplots(3, 3, figsize=(18, 14)) # Cambiado a 3x3 y un poco más alto
+axes = axes.flatten()
+
+# 1. estacion_encoded
+axes[0].hist(X['estacion_encoded'], bins=50, color='steelblue',
+             edgecolor='white', alpha=0.85)
+axes[0].set_title('Distribución: estacion_encoded', fontweight='bold')
+axes[0].set_xlabel('ID Estación')
+axes[0].set_ylabel('Frecuencia')
+
+# 2. linea_encoded
+lc = X['linea_encoded'].value_counts().sort_index()
+axes[1].bar(range(len(lc)), lc.values, color='steelblue', edgecolor='black')
+axes[1].set_title('Distribución: linea_encoded', fontweight='bold')
+axes[1].set_xticks(range(len(lc)))
+axes[1].set_xticklabels([linea_mapping.get(i, str(i)) for i in lc.index],
+                         rotation=45, ha='right', fontsize=7)
+
+# 3. dia_semana
+ds = X['dia_semana'].value_counts().sort_index()
+axes[2].bar(range(len(ds)), ds.values, color='steelblue', edgecolor='black')
+axes[2].set_title('Distribución: dia_semana', fontweight='bold')
+axes[2].set_xticks(range(len(ds)))
+axes[2].set_xticklabels(['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'])
+
+# 4. mes_encoded
+mc = X['mes_encoded'].value_counts().sort_index()
+axes[3].bar(range(len(mc)), mc.values, color='steelblue', edgecolor='black')
+axes[3].set_title('Distribución: mes_encoded', fontweight='bold')
+axes[3].set_xticks(range(len(mc)))
+axes[3].set_xticklabels([mes_mapping.get(i, str(i)) for i in mc.index],
+                          rotation=45, ha='right', fontsize=7)
+
+# 5. anio
+ac = X['anio'].value_counts().sort_index()
+axes[4].bar(ac.index.astype(str), ac.values, color='steelblue', edgecolor='black')
+axes[4].set_title('Distribución: anio', fontweight='bold')
+
+# 6. post_boleto
+pb = X['post_boleto'].value_counts().sort_index()
+axes[5].bar(['Pre (0)', 'Post (1)'], pb.values, color=['#3498db', '#e74c3c'], edgecolor='black')
+axes[5].set_title('Distribución: post_boleto', fontweight='bold')
+
+# 7. es_festivo
+fest = X['es_festivo'].value_counts().sort_index()
+axes[6].bar(['Laborable (0)', 'Festivo (1)'], fest.values, color=['#95a5a6', '#f39c12'], edgecolor='black')
+axes[6].set_title('Distribución: es_festivo', fontweight='bold')
+
+# 8. es_quincena
+quin = X['es_quincena'].value_counts().sort_index()
+axes[7].bar(['No Quincena (0)', 'Quincena (1)'], quin.values, color=['#95a5a6', '#2ecc71'], edgecolor='black')
+axes[7].set_title('Distribución: es_quincena', fontweight='bold')
+
+# 9. lluvia_historica
+lluvia = X['lluvia_historica'].value_counts().sort_index()
+axes[8].bar(['Seca (0)', 'Lluvias (1)'], lluvia.values, color=['#f1c40f', '#3498db'], edgecolor='black')
+axes[8].set_title('Distribución: lluvia_historica', fontweight='bold')
+
+plt.suptitle('Distribución de las 9 variables predictoras incluidas en el modelo',
+             fontsize=16, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
+
+## Diseño e implementación con POO: Patrón Strategy y Pipeline
+
+El código fuente del modelo está organizado mediante **Programación Orientada a Objetos (POO)**. Para esta etapa, se implementó una arquitectura basada en el **Patrón de Diseño Strategy** mediante una clase abstracta padre (`ModeloBase`), de la cual hereda nuestra clase concreta `ModeloClasificacion`. Esta arquitectura permite intercambiar algoritmos estandarizando métodos clave como `entrenar()`, `predecir()` y la persistencia (`guardar_modelo()` y `cargar_modelo()`).
+
+A nivel de procesamiento de datos, se emplea el **Patrón Pipeline** de scikit-learn. El procesamiento ocurre en etapas secuenciales bien definidas (normalización con `StandardScaler` → clasificación con `RandomForestClassifier`), lo que permite encapsular ambas transformaciones en un único objeto cohesivo, serializable y reproducible.
+
+La clase implementa los siguientes métodos organizados por responsabilidad:
+
+- **Construcción**: `_construir_pipeline_base()` — crea un Pipeline limpio sin ajustar.
+- **Entrenamiento**: `entrenar()` — búsqueda con `RandomizedSearchCV` + `StratifiedKFold`.
+- **Predicción**: `predecir()` y `predecir_proba()` — inferencia sobre nuevas observaciones.
+- **Evaluación**: `evaluar()` — calcula el conjunto completo de métricas requeridas.
+- **Análisis**: `importancia_variables()` y `resultados_busqueda()` — introspección del modelo.
+- **Persistencia**: `guardar_modelo()` y `cargar_modelo()` — serialización y deserialización con joblib.
+
+```{python}
+# Instanciación del modelo
+modelo = ModeloClasificacion(seed=SEED)
+print("Modelo de clasificación importado desde src.modelo_clasificacion")
+print(f"\n{modelo}")
+print("\nMétodos disponibles:")
+metodos = [m for m in dir(modelo) if not m.startswith('_') or m == '__repr__']
+for m in metodos:
+    if not m.startswith('_'):
+        print(f"  - {m}()")
+```
+
+La clase `ModeloClasificacion` queda instanciada con `seed=42`. Los métodos públicos disponibles son: `entrenar()`, `cargar_modelo()` (classmethod), `evaluar()`, `guardar_modelo()`, `importancia_variables()`, `predecir()`, `predecir_proba()` y `resultados_busqueda()`.
+
+
+## División del conjunto de datos
+
+Se divide el dataset en entrenamiento (80 %) y prueba (20 %) con `stratify=y` para mantener la proporción de cada clase en ambos subconjuntos. La semilla fija garantiza la reproducibilidad del experimento.
+
+```{python}
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=SEED,
+    stratify=y
+)
+
+print(f"Conjunto de ENTRENAMIENTO : {X_train.shape[0]:,} registros  ({X_train.shape[0]/len(X)*100:.0f}%)")
+print(f"Conjunto de PRUEBA        : {X_test.shape[0]:,} registros  ({X_test.shape[0]/len(X)*100:.0f}%)")
+print(f"Variables                 : {X_train.shape[1]}")
+
+print("\nDistribución de clases — ENTRENAMIENTO:")
+for i in range(4):
+    n = (y_train == i).sum()
+    print(f"  {NOMBRES_CLASES[i]:8s} (clase {i}): {n:7,}  ({100*n/len(y_train):.1f}%)")
+
+print("\nDistribución de clases — PRUEBA:")
+for i in range(4):
+    n = (y_test == i).sum()
+    print(f"  {NOMBRES_CLASES[i]:8s} (clase {i}): {n:7,}  ({100*n/len(y_test):.1f}%)")
+
+print("\n Estratificación verificada: proporciones equivalentes en ambos conjuntos.")
+```
+
+La estratificación con `stratify=y` garantiza que las proporciones de cada clase son equivalentes en entrenamiento y prueba, asegurando que la clase Crítico (~15 %) esté representada en ambos subconjuntos sin sesgo de muestreo.
+
+La elección de la proporción 80/20 se justifica por la naturaleza del dataset: un conjunto de entrenamiento más grande permite al modelo aprender los patrones de afluencia de todas las líneas y estaciones con mejor cobertura temporal, mientras que un conjunto de prueba del 20 % es suficientemente grande para obtener una evaluación estadísticamente robusta. El uso de `stratify=y` garantiza que la clase minoritaria (Crítico, ~15 %) esté representada en ambos subconjuntos en la misma proporción, evitando sesgos en la evaluación.
+
+
+## Modelo Base (Baseline)
+
+Se entrena un `DummyClassifier` con la estrategia `most_frequent`, que predice siempre la clase más frecuente del conjunto de entrenamiento. Este clasificador trivial establece el umbral mínimo de *Accuracy* que el modelo real está obligado a superar para justificar su complejidad computacional.
+
+```{python}
+# Se calcula el accuracy de la línea base usando el método encapsulado
+dummy_acc = modelo.baseline_dummy(X_train, y_train, X_test, y_test)
+# Para saber cuál fue la clase más frecuente simplemente vemos y_train
+clase_mayoritaria_idx = y_train.mode()[0]
+clase_mas_frecuente = NOMBRES_CLASES[clase_mayoritaria_idx]
+print("Clasificador Trivial (DummyClassifier — most_frequent)")
+print(f"\n  Estrategia                 : Predecir siempre la clase '{clase_mas_frecuente}'")
+print(f"  Accuracy en prueba         : {dummy_acc:.4f}  ({dummy_acc*100:.2f}%)")
+print(f"\n  → El modelo supervisado debe superar {dummy_acc*100:.2f}% de accuracy")
+```
+
+
+## Entrenamiento y Ajuste de Hiperparámetros
+
+Se construye el **Patrón Pipeline** a través del método `_construir_pipeline_base()` de la clase `ModeloClasificacion`. Este patrón encadena dos etapas secuenciales bien definidas: `StandardScaler` (normalización de variables) y `RandomForestClassifier` (clasificación multiclase). Al elegir el Patrón Pipeline se garantiza que la misma transformación de normalización aprendida en entrenamiento se aplique automáticamente en cada predicción futura, eliminando el riesgo de inconsistencias entre etapas.
+
+La búsqueda de hiperparámetros se realiza mediante `RandomizedSearchCV`, que evalúa un número fijo de combinaciones aleatorias del espacio de parámetros (más eficiente que `GridSearchCV` para espacios grandes). La evaluación de cada combinación se realiza con **validación cruzada estratificada interna** (`StratifiedKFold`, 3 pliegues), garantizando que la proporción de clases se mantenga en cada pliegue. La ejecución es **secuencial** (`n_jobs=None`) para evitar desbordamiento de memoria.
+
+El espacio de búsqueda explorado es el siguiente:
+
+| Hiperparámetro | Valores candidatos |
+|---|---|
+| `n_estimators` | 150, 200, 300 |
+| `max_depth` | 20, 30, 40, None |
+| `min_samples_split` | 2, 5 |
+| `min_samples_leaf` | 1, 2 |
+| `max_features` | `'sqrt'`, `'log2'` |
+
+La búsqueda evalúa **10 combinaciones aleatorias** con **3 pliegues** de validación cruzada estratificada interna (`StratifiedKFold`), lo que implica 30 ajustes en total. La métrica de optimización es `f1_macro` y la ejecución es secuencial (`n_jobs=None`) para evitar desbordamiento de memoria.
+
+```{python}
+#| cache: true
+
+print("Espacio de búsqueda y configuración del Pipeline")
+
+print("\nEspacio de búsqueda definido:")
+for param, valores in ModeloClasificacion.DEFAULT_PARAM_DISTRIBUTIONS.items():
+    print(f"  {param:<47}: {valores}")
+
+print("\nIniciando búsqueda de hiperparámetros...")
+print("─" * 60)
+
+resultado_busqueda = modelo.entrenar(
+    X_train=X_train,
+    y_train=y_train,
+    n_iter=10,
+    n_splits=3
+)
+
+print(f"\nBúsqueda completada en {resultado_busqueda['tiempo_seg']:.1f} segundos.")
+print(f"Mejor F1 macro (CV interna): {resultado_busqueda['mejor_score_f1']:.4f}")
+print("\nMejores hiperparámetros encontrados:")
+for param, valor in resultado_busqueda['mejores_params'].items():
+    print(f"  {param.replace('clasificador__', ''):<25}: {valor}")
+```
+
+
+## Análisis de los Hiperparámetros
+
+Se visualiza el comportamiento del F1 macro a través de las distintas combinaciones evaluadas por la búsqueda aleatoria. Estas gráficas documentan empíricamente cómo afectan los principales hiperparámetros al desempeño del modelo, validando que la configuración elegida es óptima dentro del espacio explorado.
+
+```{python}
+print("Resultados de la búsqueda de hiperparámetros")
+
+# Obtener resultados a través del método de la clase
+tabla_resultados = modelo.resultados_busqueda()
+
+print("\nTodas las configuraciones evaluadas (ordenadas por F1 macro descendente):")
+print(tabla_resultados.round(4).to_string(index=False))
+
+# Recuperar datos del objeto de búsqueda para las gráficas
+res = pd.DataFrame(modelo.busqueda_.cv_results_).sort_values('mean_test_score', ascending=False)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# F1 macro vs. n_estimators
+axes[0].scatter(
+    res['param_clasificador__n_estimators'],
+    res['mean_test_score'],
+    s=80, color='steelblue', edgecolors='black', alpha=0.8
+)
+axes[0].set_xlabel('n_estimators')
+axes[0].set_ylabel('F1 macro (CV interna)')
+axes[0].set_title('F1 macro vs. n_estimators', fontweight='bold')
+
+# F1 macro vs. max_depth
+x_md = res['param_clasificador__max_depth'].fillna('None').apply(str)
+axes[1].scatter(x_md, res['mean_test_score'],
+                s=80, color='steelblue', edgecolors='black', alpha=0.8)
+axes[1].set_xlabel('max_depth')
+axes[1].set_ylabel('F1 macro (CV interna)')
+axes[1].set_title('F1 macro vs. max_depth', fontweight='bold')
+axes[1].tick_params(axis='x', rotation=45)
+
+plt.suptitle('Comportamiento del F1 macro en la búsqueda de hiperparámetros',
+             fontsize=13, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+# Mostrar hiperparámetros del Pipeline final
+rf_final = modelo.pipeline_.named_steps['clasificador']
+print("\nPipeline final configurado con los hiperparámetros óptimos.")
+print("Estructura:")
+print("  [1] StandardScaler          → normalización de las 6 variables")
+print("  [2] RandomForestClassifier  → clasificación del nivel de saturación")
+print(f"\nHiperparámetros finales del clasificador:")
+for p in ['n_estimators', 'max_depth', 'min_samples_split',
+          'min_samples_leaf', 'max_features', 'class_weight', 'n_jobs']:
+    print(f"  {p:<25}: {rf_final.get_params()[p]}")
+```
+
+El Pipeline final tiene la estructura: **[1] `StandardScaler`** → normalización de las 9 variables predictoras, seguido de **[2] `RandomForestClassifier`** → clasificación del nivel de saturación con los hiperparámetros óptimos encontrados.
+
+
+## Evaluación de Rendimiento y Métricas
+
+### Justificación de Métricas Seleccionadas
+
+Para evaluar la efectividad del modelo en el contexto del STC Metro, se selecciona un conjunto integral de métricas complementarias. En el contexto operativo del Metro, **buscamos un alto recall para la clase Crítico**, ya que es fundamental no perderse los días de máxima saturación para poder anticipar respuestas operativas. Al mismo tiempo, se requiere una **precision razonable** para que las alertas generadas sean confiables y no saturen los sistemas de respuesta. El **F1-Score macro** es la métrica que la búsqueda de hiperparámetros optimizó, garantizando un balance entre precision y recall sin sacrificar el desempeño en ninguna clase.
+
+| Métrica | Relevancia operativa |
+|---------|----------------------|
+| **Accuracy** | Desempeño global del sistema; complementa las métricas por clase. |
+| **Precision por clase** | De los días predichos como nivel X, ¿cuántos lo eran realmente? Clave para evitar falsas alarmas. |
+| **Recall por clase** | De los días que realmente fueron nivel X, ¿cuántos detectó el modelo? Clave para no perder días Críticos. |
+| **F1-Score macro** | Balance entre precision y recall, tratando todas las clases por igual. |
+| **F1-Score ponderado** | Considera el peso de cada clase; útil para evaluar el desempeño global con desbalance. |
+| **Matriz de confusión** | Identifica qué clases se confunden entre sí, revelando patrones de error sistemático. |
+| **Curva ROC y AUC** | Capacidad de discriminación por clase en el espacio probabilístico. |
+
+### Cálculo y Presentación de Métricas
+
+```{python}
+print("Evaluación del modelo supervisado con ModeloClasificacion.evaluar()")
+
+metricas  = modelo.evaluar(X_test, y_test)
+acc_train = modelo.accuracy_entrenamiento(X_train, y_train)
+
+print("\n Comparación con la línea base ")
+print(f"  Accuracy (DummyClassifier)    : {dummy_acc:.4f}  ({dummy_acc*100:.2f}%)")
+print(f"  Accuracy (Random Forest)      : {metricas['accuracy']:.4f}  ({metricas['accuracy']*100:.2f}%)")
+print(f"  Mejora sobre línea base       : +{(metricas['accuracy'] - dummy_acc)*100:.2f} pp")
+
+
+print("\n Diagnóstico de sobreajuste ")
+print(f"  Accuracy en entrenamiento : {acc_train:.4f}")
+print(f"  Accuracy en prueba        : {metricas['accuracy']:.4f}")
+diff = acc_train - metricas['accuracy']
+print(f"  Diferencia (gap)          : {diff:.4f}  ({diff*100:.2f} pp)")
+if diff < 0.05:
+    print("  → Gap pequeño: el modelo generaliza correctamente.")
+elif diff < 0.12:
+    print("  → Gap moderado: leve sobreajuste, aceptable en Random Forest.")
+else:
+    print("  → Gap considerable: evaluar regularización adicional.")
+
+print("\n Métricas por clase ")
+tabla_m = pd.DataFrame({
+    'Clase'    : NOMBRES_CLASES,
+    'Precision': [f"{p:.4f}" for p in metricas['precision_por_clase']],
+    'Recall'   : [f"{r:.4f}" for r in metricas['recall_por_clase']],
+    'F1-Score' : [f"{f:.4f}" for f in metricas['f1_por_clase']]
+})
+print(tabla_m.to_string(index=False))
+
+print("\n Promedios agregados ")
+print(f"  {'Métrica':<20} {'Macro':>10} {'Ponderada':>12}")
+print(f"  {'Precision':<20} {metricas['precision_macro']:>10.4f} {metricas['precision_ponderada']:>12.4f}")
+print(f"  {'Recall':<20} {metricas['recall_macro']:>10.4f} {metricas['recall_ponderado']:>12.4f}")
+print(f"  {'F1-Score':<20} {metricas['f1_macro']:>10.4f} {metricas['f1_ponderado']:>12.4f}")
+
+print("\n Reporte completo de clasificación ")
+print(metricas['report_texto'])
+```
+
+**Interpretación de métricas:**
+
+- **Precision:** De todos los días que el modelo predijo como nivel X, ¿qué proporción lo era realmente? Una precision alta en Crítico garantiza que las alertas operativas generadas sean confiables.
+- **Recall:** De todos los días que realmente fueron nivel X, ¿cuántos detectó el modelo? El recall de Crítico es la métrica operativa más importante: un recall bajo implica que el sistema no anticipa los días de máxima saturación.
+- **F1-Score (macro):** Promedio armónico de precision y recall tratando todas las clases por igual. Es la métrica que optimizó la búsqueda de hiperparámetros para no sacrificar el desempeño en las clases menos representadas.
+
+### Análisis e interpretación de resultados
+
+**Desempeño global y comparación con la línea base**
+
+El modelo alcanza una *accuracy* del **69.10 %** en el conjunto de prueba, lo que representa una mejora de **+34.40 puntos porcentuales** sobre el clasificador trivial (34.70 %). Esta diferencia confirma que el modelo aprende patrones contextuales reales del sistema: lograr prácticamente el doble de aciertos que la heurística de "predecir siempre la clase mayoritaria" evidencia una capacidad discriminativa genuina, construida exclusivamente a partir de variables temporales e identificadores de línea y estación, sin utilizar la afluencia del propio día.
+
+La brecha entre *accuracy* de entrenamiento (81.14 %) y de prueba (69.10 %) es de 12.04 pp, lo que indica un sobreajuste moderado. Este comportamiento es coherente con el uso de `max_depth=None`, que permite que los árboles crezcan sin restricción de profundidad. En un bosque de esta escala (200 árboles, ~286 000 muestras de entrenamiento) el sobreajuste moderado es esperable y operativamente aceptable dado el nivel de desempeño conseguido.
+
+**Desempeño por clase**
+
+La clase **Bajo** obtiene el mayor F1-Score (0.82), lo que refleja que los días de baja demanda (afluencia por debajo del percentil 25 histórico de cada estación) forman un grupo claramente diferenciado. Su alta precisión (0.82) y recall (0.82) indican un desempeño simétrico: el modelo los identifica con fiabilidad y no los confunde frecuentemente con otras clases.
+
+La clase **Medio** presenta buen desempeño (F1 = 0.70), aunque con un recall de 0.66 que revela cierta confusión con las clases adyacentes: un 11 % de los días Medio se clasifica erróneamente como Bajo y un 17 % como Alto, consecuencia natural de ser la clase central en la escala ordinal.
+
+La clase **Alto** es la más difícil de clasificar (F1 = 0.60) por estar en la zona de transición entre operación normal elevada y saturación máxima. Su error es bidireccional: el 16.09 % de los días Alto se clasifica como Medio y el 21.99 % como Crítico, indicando que la frontera de decisión entre estas dos clases es inherentemente difusa en el espacio de características contextuales.
+
+La clase **Crítico**, aunque su precisión es la más baja (0.56), su **recall de 0.71** es operativamente positivo. El modelo detecta el 71 % de los días de máxima saturación, a costa de generar algunas falsas alarmas. En el contexto del STC Metro, este compromiso es favorable: no detectar un día crítico (falso negativo) tiene consecuencias operativas más graves que emitir una alerta innecesaria (falso positivo).
+
+**Patrón de errores en la Matriz de Confusión**
+
+La matriz normalizada revela un patrón estrictamente **near-diagonal**: los errores ocurren casi exclusivamente entre clases adyacentes (Bajo↔Medio, Medio↔Alto, Alto↔Crítico), con confusiones entre clases no adyacentes prácticamente inexistentes (menos del 2.61 % de días Bajo clasificados como Crítico y 1.10 % en dirección inversa). Esta estructura de error es operativamente relevante: cuando el modelo se equivoca, lo hace por un único nivel en la escala ordinal, nunca confunde un día de baja saturación con uno crítico ni viceversa. Esto significa que incluso las predicciones incorrectas conservan valor informativo para la gestión del sistema.
+
+**Capacidad discriminativa probabilística (AUC-ROC)**
+
+El AUC macro de **0.8943** es notablemente alto en relación con la *accuracy* de 69.10 %, lo que indica que el modelo posee una sólida capacidad de ordenamiento probabilístico aunque la frontera de decisión entre clases adyacentes genere cierta imprecisión en la clasificación dura. Todos los AUC por clase (estrategia OvR) superan 0.85, confirmando que el clasificador distingue cada nivel de saturación del resto con alta fiabilidad en el espacio de probabilidades. La disparidad entre AUC alto y *accuracy* moderada es coherente con la naturaleza ordinal del problema: los cuatro niveles son contiguos y la transición entre ellos es gradual, por lo que el modelo estima bien las probabilidades relativas aunque la asignación exacta de etiqueta sea más difícil.
+
+
+## Visualización: Matriz de Confusión y Curva ROC
+
+### Matriz de Confusión
+
+Exhibimos la matriz de confusión en valores absolutos y normalizados para visualizar claramente el desempeño del modelo en cada clase, identificando dónde se producen los errores de clasificación y su magnitud relativa. Esto es crucial para entender si el modelo tiende a confundir ciertos niveles de saturación entre sí.
+
+```{python}
+cm = metricas['confusion_matrix']
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# Valores absolutos
+ConfusionMatrixDisplay(cm, display_labels=NOMBRES_CLASES).plot(
+    ax=axes[0], cmap='Blues', values_format='d', colorbar=False)
+axes[0].set_title('Matriz de Confusión — Valores Absolutos',
+                  fontsize=12, fontweight='bold')
+
+# Normalizada por fila (recall por clase)
+cm_n = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+ConfusionMatrixDisplay(cm_n, display_labels=NOMBRES_CLASES).plot(
+    ax=axes[1], cmap='Blues', values_format='.2%', colorbar=False)
+axes[1].set_title('Matriz de Confusión Normalizada (recall por fila)',
+                  fontsize=12, fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+print("Matriz normalizada — cada celda = % del total real de esa clase:")
+print(pd.DataFrame(
+    cm_n * 100,
+    index  =[f'Real: {c}'   for c in NOMBRES_CLASES],
+    columns=[f'Pred: {c}'   for c in NOMBRES_CLASES]
+).round(2).to_string())
+```
+
+### Curvas ROC — One-vs-Rest (OvR)
+
+Para la clasificación multiclase se emplea la estrategia **One-vs-Rest**: para cada nivel de saturación se evalúa la capacidad de discriminación del modelo considerando esa clase como positiva y las demás como negativas. Un AUC cercano a 1.0 confirma que el modelo distingue con alta fiabilidad cada nivel de saturación del resto.
+
+```{python}
+y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+aucs = []
+for i, (color, nombre) in enumerate(zip(COLORES_CLASES, NOMBRES_CLASES)):
+    fpr, tpr, _ = roc_curve(y_test_bin[:, i], metricas['y_proba'][:, i])
+    roc_auc     = auc(fpr, tpr)
+    aucs.append(roc_auc)
+    axes[0].plot(fpr, tpr, color=color, lw=2.5,
+                 label=f'{nombre} (AUC = {roc_auc:.4f})')
+
+axes[0].plot([0, 1], [0, 1], 'k--', lw=1, label='Clasificador aleatorio')
+axes[0].set_xlim([0, 1]); axes[0].set_ylim([0, 1.05])
+axes[0].set_xlabel('Tasa de Falsos Positivos (FPR)')
+axes[0].set_ylabel('Tasa de Verdaderos Positivos (Recall)')
+axes[0].set_title('Curvas ROC por clase (OvR)', fontweight='bold')
+axes[0].legend(loc='lower right', fontsize=9)
+
+axes[1].barh(NOMBRES_CLASES, aucs, color=COLORES_CLASES, edgecolor='black')
+axes[1].set_xlim([0.5, 1.01]); axes[1].set_xlabel('AUC-ROC')
+axes[1].set_title('AUC-ROC por clase', fontweight='bold')
+for i, v in enumerate(aucs):
+    axes[1].text(v + 0.003, i, f'{v:.4f}', va='center', fontweight='bold')
+
+plt.suptitle('Análisis ROC — Clasificación de Saturación (Metro CDMX)',
+             fontsize=13, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+auc_macro = roc_auc_score(y_test_bin, metricas['y_proba'], multi_class='ovr', average='macro')
+auc_w     = roc_auc_score(y_test_bin, metricas['y_proba'], multi_class='ovr', average='weighted')
+print(f"\n  AUC-ROC Macro    (OvR): {auc_macro:.4f}")
+print(f"  AUC-ROC Ponderado(OvR): {auc_w:.4f}")
+
+```
+
+Un AUC > 0.5 confirma poder discriminativo real del modelo. El AUC macro de **0.8943** indica que el clasificador separa probabilísticamente cada nivel de saturación del resto con alta fiabilidad para las cuatro clases evaluadas de forma independiente (estrategia OvR).
+
+
+## Análisis de Importancia de Variables
+
+La importancia de variables del Random Forest (disminución promedio de la impureza de Gini) indica qué atributos del STC Metro contribuyen más a las decisiones de clasificación. Se obtiene directamente desde la instancia del modelo a través del método `importancia_variables()`.
+
+```{python}
+imp_df = modelo.importancia_variables()
+
+print("Importancia de variables:")
+print(imp_df.to_string(index=False))
+
+fig, ax = plt.subplots(figsize=(9, 4))
+colores_imp = ['#e74c3c' if i == 0 else 'steelblue' for i in range(len(imp_df))]
+bars = ax.barh(
+    imp_df['Variable'][::-1],
+    imp_df['Importancia'][::-1],
+    color=colores_imp[::-1],
+    edgecolor='black'
+)
+ax.set_title(
+    'Importancia de Variables — Random Forest\n'
+    'Clasificación del Nivel de Saturación del Metro CDMX',
+    fontsize=11, fontweight='bold'
+)
+ax.set_xlabel('Importancia (Gini mean decrease)')
+for bar, val in zip(bars, imp_df['Importancia'][::-1]):
+    ax.text(val + 0.002, bar.get_y() + bar.get_height()/2,
+            f'{val:.4f}', va='center', fontweight='bold', fontsize=9)
+plt.tight_layout()
+plt.show()
+```
+
+**Interpretación de la importancia de variables:**
+
+- **`estacion_encoded` (variable dominante, 38.7 %):** La estación codificada es el predictor más importante porque la variable objetivo se definió mediante percentiles históricos individuales por estación. Al incluir el identificador de estación, el modelo captura implícitamente la escala de demanda y el perfil de capacidad de cada andén: lo que es "alto" para una estación periférica difiere estructuralmente de lo que es "alto" para una estación del centro histórico. Este resultado valida la decisión de construir `nivel_saturacion` desde percentiles relativos y no absolutos.
+
+- **`dia_semana` (segundo lugar, 23.9 %):** El día de la semana es el predictor temporal de mayor poder discriminativo. La demanda del metro exhibe una ciclicidad semanal marcada y consistente entre líneas y estaciones: los días laborables (lunes a viernes) concentran los niveles Alto y Crítico, mientras que sábado y domingo presentan predominantemente niveles Bajo y Medio.
+
+- **`linea_encoded` (tercer lugar, 12.9 %):** La línea complementa la codificación de estación, capturando patrones de demanda a nivel de corredor. Las líneas del centro histórico (Líneas 1, 2, 3) presentan distribuciones de saturación estructuralmente distintas de las periféricas (Líneas A, B, 12), lo que aporta información adicional más allá del identificador de estación individual.
+
+- **`anio` (cuarto lugar, 11.7 %):** El año registra la evolución longitudinal del sistema: recuperación post-pandemia (2021–2022), normalización (2023) y crecimiento tras las reaperturas de Líneas 12 y 1 (2024–2026). Estas variaciones estructurales modifican los patrones de demanda relativa a lo largo del tiempo y el modelo las captura de forma efectiva.
+
+- **`mes_encoded` (quinto lugar, 9.5 %):** La estacionalidad mensual refleja los ciclos de movilidad urbana. Enero y agosto (inicio de semestres escolares) generan mayor demanda que diciembre y julio (vacaciones). Al ser los percentiles estáticos, los meses de alta demanda concentran más días en los niveles Alto y Crítico.
+
+- **Variables binarias (`post_boleto`, `lluvia_historica`, `es_quincena`, `es_festivo`, ~3.3 % combinadas):** Las cuatro variables binarias tienen una contribución mínima en conjunto. Destaca que `es_festivo` registra **importancia cero**, lo que indica que el efecto de los días festivos sobre la saturación queda completamente absorbido por `dia_semana` y el resto de variables contextuales. Este resultado sugiere que `es_festivo` podría ser eliminada en versiones futuras del modelo sin pérdida de desempeño, simplificando el pipeline de preparación de datos.
+
+
+## Persistencia del Modelo y Demostración de Reutilización
+
+### Guardado del modelo
+
+El Pipeline completo (que incluye el `StandardScaler` con sus parámetros de normalización ajustados sobre `X_train` y el `RandomForestClassifier` con los hiperparámetros óptimos) se serializa en disco con `joblib` a través del método `guardar_modelo()` de la clase `ModeloClasificacion`.
+
+```{python}
+ruta_modelo = "../../models/rf_clasificacion_metro.joblib"
+
+ruta_guardada = modelo.guardar_modelo(ruta_modelo)
+
+print("Persistencia del modelo con ModeloClasificacion.guardar_modelo()")
+print(f"\n  Archivo guardado en  : {ruta_guardada}")
+print(f"  Tamaño del archivo   : {os.path.getsize(ruta_guardada) / 1024:.1f} KB")
+
+rf_guardado = modelo.pipeline_.named_steps['clasificador']
+print(f"\n  Contenido serializado:")
+print(f"    [1] StandardScaler          — media y desviación estándar de X_train")
+print(f"    [2] RandomForestClassifier  — {rf_guardado.n_estimators} árboles con hiperparámetros óptimos")
+print(f"        max_depth         : {rf_guardado.max_depth}")
+print(f"        min_samples_split : {rf_guardado.min_samples_split}")
+print(f"        min_samples_leaf  : {rf_guardado.min_samples_leaf}")
+print(f"        max_features      : {rf_guardado.max_features}")
+print(f"        class_weight      : {rf_guardado.class_weight}")
+```
+
+### Demostración de reutilización (celda independiente)
+
+La siguiente celda es **funcionalmente independiente** del entrenamiento: utiliza únicamente el método de clase `ModeloClasificacion.cargar_modelo()` para reconstruir el modelo desde disco y realizar predicciones sin acceso a las variables de entrenamiento originales. Esto simula una sesión de inferencia en producción.
+
+```{python}
+
+import gc
+
+# Liberar la memoria del modelo de entrenamiento
+if 'modelo' in locals():
+    del modelo
+gc.collect()
+
+# ─── DEMOSTRACIÓN DE REUTILIZACIÓN ───────────────────────────────────────────
+# Esta celda simula una sesión de inferencia separada del entrenamiento.
+# Solo se necesita la ruta del archivo .joblib y la definición de la clase.
+# ─────────────────────────────────────────────────────────────────────────────
+print("Demostración de reutilización del modelo serializado")
+
+modelo_cargado = ModeloClasificacion.cargar_modelo(ruta_modelo, seed=SEED)
+print(f"  Pipeline cargado desde : {ruta_modelo}")
+print(f"  Instancia recuperada   : {modelo_cargado}\n")
+
+# Registros hipotéticos con las 9 variables predictoras
+# Columnas: linea, estacion, dia_sem, mes, anio, festivo, quincena, lluvia, post_boleto
+nuevos = pd.DataFrame({
+    'linea_encoded'   : [0,     3,     10,    7,     2   ], # Líneas reales del dataset (L1=0, L2=1, etc.)
+    'estacion_encoded': [114,   56,    142,   88,    33  ], # Estaciones 
+    'dia_semana'      : [0,     4,     6,     2,     1   ], # 0=Lun, 4=Vie, 6=Dom
+    'mes_encoded'     : [3,     1,     5,     9,     2   ], # 3=Ene, 1=Ago, 5=Jul
+    'anio'            : [2025,  2024,  2024,  2023,  2025], # Años 
+    'es_festivo'      : [0,     0,     0,     1,     1   ], # Los últimos dos son festivos
+    'es_quincena'     : [1,     1,     0,     0,     1   ], # Quincenas en regs 1, 2 y 5
+    'lluvia_historica': [0,     1,     1,     0,     0   ], # Lluvia en meses 1 y 5 (Ago y Jul)
+    'post_boleto'     : [1,     1,     1,     0,     1   ]  # Todos después de la implementación del boleto digital
+})
+
+contexto = [
+    "L1 · Est. 114 · Lun (Ene 2025) · Quincena, Sin lluvia",
+    "L3 · Est. 56  · Vie (Ago 2024) · Quincena, Lluvia",
+    "LA · Est. 142 · Dom (Jul 2024) · Fin de mes, Lluvia",
+    "L7 · Est. 88  · Mié (Nov 2023) · Festivo (Revolución)",
+    "L2 · Est. 33  · Mar (Dic 2025) · Festivo, Quincena"
+]
+
+predicciones   = modelo_cargado.predecir(nuevos)
+probabilidades = modelo_cargado.predecir_proba(nuevos)
+
+print(f"  {'Reg':<4} {'Contexto':<55} {'Nivel Predicho':<16} {'Confianza'}")
+print("  " + "─" * 88)
+for i, (pred, proba, ctx) in enumerate(zip(predicciones, probabilidades, contexto)):
+    nivel  = ModeloClasificacion.NOMBRES_CLASES[pred]
+    print(f"  {i:<4} {ctx:<55} {nivel:<16} {proba.max()*100:>7.1f}%")
+
+
+```
+
+La demostración confirma que el Pipeline cargado aplica automáticamente la normalización aprendida en entrenamiento y clasifica el nivel de saturación sin necesidad de re-entrenamiento ni acceso a los datos originales. El objeto `ModeloClasificacion` queda disponible para inferencia en tiempo real en cualquier módulo de producción que importe el archivo `.joblib`, verificando el requisito técnico de persistencia del proyecto.
