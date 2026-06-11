@@ -65,3 +65,12 @@ También puedes ejecutar el código para la visualización utilizando el siguien
 quarto preview
 ```
 Esto abrirá una ventana en tu navegador con la visualización del análisis exploratorio de datos de personas desaparecidas en México.
+
+## Instrucciones para ejecutar el script de demostración:
+1. Asegúrate de haber seguido los pasos anteriores para configurar el entorno virtual e instalar las dependencias.
+2. Deberás tener el modelo de clasificación previamente entrenado guardado en un archivo `.joblib` dentro de la carpeta `models`. Si no tienes el archivo, puedes ejecutar el notebook `clasificacion.qmd` para entrenar y guardar el modelo.
+3. Desde el directorio raíz del proyecto, ejecuta el script de demostración con el siguiente comando:
+```bash
+python -m src.demostracion
+```
+Esto ejecutará el script `demostracion.py` e imprimirá en la consola los resultados de las predicciones realizadas por el modelo de clasificación.
