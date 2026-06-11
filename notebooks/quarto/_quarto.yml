@@ -15,8 +15,8 @@ book:
     - intro.qmd
     - limpieza.qmd
     - eda.qmd
-    - clustering.qmd
     - clasificacion.qmd
+    - clustering.qmd
     - arquitectura.qmd
     - conclusiones.qmd
     - references.qmd
