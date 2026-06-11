@@ -74,3 +74,8 @@ Esto abrirá una ventana en tu navegador con la visualización del análisis exp
 python -m src.demostracion
 ```
 Esto ejecutará el script `demostracion.py` e imprimirá en la consola los resultados de las predicciones realizadas por el modelo de clasificación.
+
+## Descarga de modelos serializados:
+Si deseas descargar los modelos serializados, puedes encontrarlos en el siguiente enlace:
+[Modelos Serializados](https://drive.google.com/drive/folders/1k4nPQN8lZyVkwDHRk2PySx06iI5QDGpZ?usp=drive_link)
+Estos modelos también los puedes obtener al momento de ejecutar todo el código que se encuentran en los notebooks, ya que al entrenar los modelos se guardan automáticamente en la carpeta `models` con el formato `.joblib`.
