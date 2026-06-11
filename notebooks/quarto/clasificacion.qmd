@@ -1,11 +1,3 @@
----
-title: "Modelo de clasificación"
-
-execute:
-  cache: true
-  freeze: auto
----
-
 # Modelo de clasificación
 
 En esta sección se construye un modelo de clasificación supervisada para predecir la variable objetivo `nivel_saturacion`, que categoriza el nivel de saturación diario de cada estación del STC Metro de la CDMX en cuatro niveles: **bajo** (0), **medio** (1), **alto** (2) y **crítico** (3). Esta variable fue definida en la etapa de preparación de datos mediante percentiles históricos de afluencia calculados de manera individual por estación, de modo que cada punto de la red se compara contra su propio historial y no contra estaciones de distinto perfil de demanda.
@@ -350,6 +342,8 @@ El espacio de búsqueda explorado es el siguiente:
 La búsqueda evalúa **10 combinaciones aleatorias** con **3 pliegues** de validación cruzada estratificada interna (`StratifiedKFold`), lo que implica 30 ajustes en total. La métrica de optimización es `f1_macro` y la ejecución es secuencial (`n_jobs=None`) para evitar desbordamiento de memoria.
 
 ```{python}
+#| cache: true
+
 print("Espacio de búsqueda y configuración del Pipeline")
 
 print("\nEspacio de búsqueda definido:")
