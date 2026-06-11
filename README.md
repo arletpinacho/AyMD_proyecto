@@ -8,6 +8,7 @@ disponible públicamente en [Portal de Datos Abiertos](https://datos.cdmx.gob.mx
 con el fin de desarrollar modelos de clasificación y clustering que permitan por un lado clasificar el nivel de saturación 
 diario de cada estación del STC y por el otro segmentar las estaciones de acuerdo a sus perfiles de demanda.
 
+La versión lista para visualizar de nuestra documentación en quarto se puede encontrar en el siguiente [link](https://arletpinacho.github.io/AyMD_proyecto/conclusiones.html).
 
 ## Equipo 2:
 * **Escobar Gonzalez Isaac Giovani** - 321336400
